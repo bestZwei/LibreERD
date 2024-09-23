@@ -8,7 +8,7 @@ let tool = 'rectangle';
 let startX, startY;
 let history = [];
 let redoStack = [];
-let eraserSize = 5;
+let eraserSize = 10;
 let fontSize = 20;
 let currentColor = '#000000';
 const textInput = document.getElementById('text-input');
@@ -69,9 +69,18 @@ function draw(e) {
             drawArrow(startX, startY, x, y);
             break;
         case 'eraser':
-            ctx.clearRect(x - eraserSize / 2, y - eraserSize / 2, eraserSize, eraserSize);
+            erase(x, y);
             break;
     }
+}
+
+function erase(x, y) {
+    ctx.save();
+    ctx.globalCompositeOperation = 'destination-out';
+    ctx.beginPath();
+    ctx.arc(x, y, eraserSize / 2, 0, Math.PI * 2, false);
+    ctx.fill();
+    ctx.restore();
 }
 
 function stopDrawing() {
