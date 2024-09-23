@@ -24,6 +24,7 @@ function startDrawing(e) {
         textInput.style.height = 'auto';
         textInput.value = '';
         textInput.focus();
+        adjustTextInputSize();
         return;
     }
     drawing = true;
