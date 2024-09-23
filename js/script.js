@@ -10,6 +10,7 @@ let history = [];
 let redoStack = [];
 let eraserSize = 5;
 let fontSize = 20;
+let currentColor = '#000000';
 const textInput = document.getElementById('text-input');
 let isDraggingText = false;
 let offsetX, offsetY;
@@ -149,6 +150,26 @@ function adjustTextInputSize() {
     textInput.style.width = textInput.scrollWidth + 'px';
 }
 
+function throttle(func, limit) {
+    let lastFunc;
+    let lastRan;
+    return function(...args) {
+        const context = this;
+        if (!lastRan) {
+            func.apply(context, args);
+            lastRan = Date.now();
+        } else {
+            clearTimeout(lastFunc);
+            lastFunc = setTimeout(function() {
+                if ((Date.now() - lastRan) >= limit) {
+                    func.apply(context, args);
+                    lastRan = Date.now();
+                }
+            }, limit - (Date.now() - lastRan));
+        }
+    };
+}
+
 document.getElementById('shape-select').onchange = (e) => tool = e.target.value;
 document.getElementById('freeform').onclick = () => tool = 'freeform';
 document.getElementById('text').onclick = () => tool = 'text';
@@ -160,6 +181,11 @@ document.getElementById('eraser').onclick = () => {
     canvas.style.cursor = 'crosshair';
 };
 document.getElementById('eraser-size').onchange = (e) => eraserSize = parseInt(e.target.value);
+document.getElementById('color-picker').onchange = (e) => {
+    currentColor = e.target.value;
+    ctx.strokeStyle = currentColor;
+    ctx.fillStyle = currentColor;
+};
 document.getElementById('undo').onclick = () => {
     if (history.length > 1) {
         redoStack.push(history.pop());
@@ -191,6 +217,7 @@ textInput.onkeydown = (e) => {
             const x = parseInt(textInput.style.left) - canvas.offsetLeft;
             let y = parseInt(textInput.style.top) - canvas.offsetTop + fontSize;
             ctx.font = `${fontSize}px Arial`;
+            ctx.fillStyle = currentColor;
             lines.forEach(line => {
                 ctx.fillText(line, x, y);
                 y += fontSize;
@@ -203,7 +230,7 @@ textInput.onkeydown = (e) => {
 };
 
 canvas.addEventListener('mousedown', startDrawing);
-canvas.addEventListener('mousemove', draw);
+canvas.addEventListener('mousemove', throttle(draw, 50));
 canvas.addEventListener('mouseup', stopDrawing);
 canvas.addEventListener('mouseout', stopDrawing);
 
