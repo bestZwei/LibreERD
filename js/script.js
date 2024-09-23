@@ -8,9 +8,18 @@ let tool = 'rectangle';
 let startX, startY;
 let history = [];
 let redoStack = [];
+let eraserSize = 5;
 const textInput = document.getElementById('text-input');
 
 function startDrawing(e) {
+    if (tool === 'text') {
+        textInput.style.display = 'block';
+        textInput.style.left = `${e.clientX}px`;
+        textInput.style.top = `${e.clientY}px`;
+        textInput.value = '';
+        textInput.focus();
+        return;
+    }
     drawing = true;
     startX = e.offsetX;
     startY = e.offsetY;
@@ -43,6 +52,8 @@ function draw(e) {
             ctx.stroke();
             break;
         case 'line':
+            ctx.beginPath();
+            ctx.moveTo(startX, startY);
             ctx.lineTo(x, y);
             ctx.stroke();
             break;
@@ -50,7 +61,7 @@ function draw(e) {
             drawArrow(startX, startY, x, y);
             break;
         case 'eraser':
-            ctx.clearRect(x - 5, y - 5, 10, 10);
+            ctx.clearRect(x - eraserSize / 2, y - eraserSize / 2, eraserSize, eraserSize);
             break;
     }
 }
@@ -107,16 +118,14 @@ function drawArrow(fromX, fromY, toX, toY) {
 
 document.getElementById('shape-select').onchange = (e) => tool = e.target.value;
 document.getElementById('freeform').onclick = () => tool = 'freeform';
-document.getElementById('text').onclick = () => {
-    tool = 'text';
-    textInput.style.display = 'block';
-    textInput.style.left = `${startX}px`;
-    textInput.style.top = `${startY}px`;
-    textInput.focus();
-};
+document.getElementById('text').onclick = () => tool = 'text';
 document.getElementById('line').onclick = () => tool = 'line';
 document.getElementById('arrow').onclick = () => tool = 'arrow';
-document.getElementById('eraser').onclick = () => tool = 'eraser';
+document.getElementById('eraser').onclick = () => {
+    tool = 'eraser';
+    canvas.style.cursor = 'crosshair';
+};
+document.getElementById('eraser-size').onchange = (e) => eraserSize = parseInt(e.target.value);
 document.getElementById('undo').onclick = () => {
     if (history.length > 1) {
         redoStack.push(history.pop());
@@ -139,7 +148,7 @@ document.getElementById('export').onclick = () => {
 textInput.onkeydown = (e) => {
     if (e.key === 'Enter') {
         ctx.font = '20px Arial';
-        ctx.fillText(textInput.value, startX, startY);
+        ctx.fillText(textInput.value, parseInt(textInput.style.left), parseInt(textInput.style.top) + 20);
         textInput.style.display = 'none';
         textInput.value = '';
         history.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
