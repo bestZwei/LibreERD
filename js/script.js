@@ -9,6 +9,7 @@ let startX, startY;
 let history = [];
 let redoStack = [];
 let eraserSize = 5;
+let textSize = 20;
 const textInput = document.getElementById('text-input');
 let isDraggingText = false;
 let offsetX, offsetY;
@@ -16,8 +17,9 @@ let offsetX, offsetY;
 function startDrawing(e) {
     if (tool === 'text') {
         textInput.style.display = 'block';
-        textInput.style.left = `${e.offsetX}px`;
-        textInput.style.top = `${e.offsetY}px`;
+        textInput.style.left = `${e.clientX - canvas.offsetLeft}px`;
+        textInput.style.top = `${e.clientY - canvas.offsetTop}px`;
+        textInput.style.fontSize = `${textSize}px`;
         textInput.value = '';
         textInput.focus();
         return;
@@ -140,6 +142,7 @@ function stopDraggingText() {
 document.getElementById('shape-select').onchange = (e) => tool = e.target.value;
 document.getElementById('freeform').onclick = () => tool = 'freeform';
 document.getElementById('text').onclick = () => tool = 'text';
+document.getElementById('text-size').onchange = (e) => textSize = parseInt(e.target.value);
 document.getElementById('line').onclick = () => tool = 'line';
 document.getElementById('arrow').onclick = () => tool = 'arrow';
 document.getElementById('eraser').onclick = () => {
@@ -168,9 +171,9 @@ document.getElementById('export').onclick = () => {
 
 textInput.onkeydown = (e) => {
     if (e.key === 'Enter') {
-        const x = parseInt(textInput.style.left) - canvas.offsetLeft;
-        const y = parseInt(textInput.style.top) - canvas.offsetTop + 20;
-        ctx.font = '20px Arial';
+        const x = parseInt(textInput.style.left);
+        const y = parseInt(textInput.style.top) + textSize;
+        ctx.font = `${textSize}px Arial`;
         ctx.fillText(textInput.value, x, y);
         textInput.style.display = 'none';
         textInput.value = '';
