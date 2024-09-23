@@ -171,13 +171,21 @@ document.getElementById('export').onclick = () => {
 
 textInput.onkeydown = (e) => {
     if (e.key === 'Enter') {
-        const x = parseInt(textInput.style.left) - canvas.offsetLeft;
-        const y = parseInt(textInput.style.top) - canvas.offsetTop + fontSize;
-        ctx.font = `${fontSize}px Arial`;
-        ctx.fillText(textInput.value, x, y);
-        textInput.style.display = 'none';
-        textInput.value = '';
-        history.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
+        if (e.ctrlKey) {
+            textInput.value += '\n';
+        } else {
+            const lines = textInput.value.split('\n');
+            const x = parseInt(textInput.style.left) - canvas.offsetLeft;
+            let y = parseInt(textInput.style.top) - canvas.offsetTop + fontSize;
+            ctx.font = `${fontSize}px Arial`;
+            lines.forEach(line => {
+                ctx.fillText(line, x, y);
+                y += fontSize;
+            });
+            textInput.style.display = 'none';
+            textInput.value = '';
+            history.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
+        }
     }
 };
 
