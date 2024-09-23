@@ -20,6 +20,8 @@ function startDrawing(e) {
         textInput.style.left = `${e.offsetX + canvas.offsetLeft}px`;
         textInput.style.top = `${e.offsetY + canvas.offsetTop}px`;
         textInput.style.fontSize = `${fontSize}px`;
+        textInput.style.width = 'auto';
+        textInput.style.height = 'auto';
         textInput.value = '';
         textInput.focus();
         return;
@@ -139,6 +141,13 @@ function stopDraggingText() {
     isDraggingText = false;
 }
 
+function adjustTextInputSize() {
+    textInput.style.height = 'auto';
+    textInput.style.width = 'auto';
+    textInput.style.height = textInput.scrollHeight + 'px';
+    textInput.style.width = textInput.scrollWidth + 'px';
+}
+
 document.getElementById('shape-select').onchange = (e) => tool = e.target.value;
 document.getElementById('freeform').onclick = () => tool = 'freeform';
 document.getElementById('text').onclick = () => tool = 'text';
@@ -169,10 +178,13 @@ document.getElementById('export').onclick = () => {
     link.click();
 };
 
+textInput.oninput = adjustTextInputSize;
+
 textInput.onkeydown = (e) => {
     if (e.key === 'Enter') {
         if (e.ctrlKey) {
             textInput.value += '\n';
+            adjustTextInputSize();
         } else {
             const lines = textInput.value.split('\n');
             const x = parseInt(textInput.style.left) - canvas.offsetLeft;
