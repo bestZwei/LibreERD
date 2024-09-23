@@ -10,6 +10,8 @@ let history = [];
 let redoStack = [];
 let eraserSize = 5;
 const textInput = document.getElementById('text-input');
+let isDraggingText = false;
+let offsetX, offsetY;
 
 function startDrawing(e) {
     if (tool === 'text') {
@@ -116,6 +118,25 @@ function drawArrow(fromX, fromY, toX, toY) {
     ctx.stroke();
 }
 
+function startDraggingText(e) {
+    if (tool === 'text' && textInput.style.display === 'block') {
+        isDraggingText = true;
+        offsetX = e.clientX - parseInt(textInput.style.left);
+        offsetY = e.clientY - parseInt(textInput.style.top);
+    }
+}
+
+function dragText(e) {
+    if (isDraggingText) {
+        textInput.style.left = `${e.clientX - offsetX}px`;
+        textInput.style.top = `${e.clientY - offsetY}px`;
+    }
+}
+
+function stopDraggingText() {
+    isDraggingText = false;
+}
+
 document.getElementById('shape-select').onchange = (e) => tool = e.target.value;
 document.getElementById('freeform').onclick = () => tool = 'freeform';
 document.getElementById('text').onclick = () => tool = 'text';
@@ -161,5 +182,9 @@ canvas.addEventListener('mousedown', startDrawing);
 canvas.addEventListener('mousemove', draw);
 canvas.addEventListener('mouseup', stopDrawing);
 canvas.addEventListener('mouseout', stopDrawing);
+
+textInput.addEventListener('mousedown', startDraggingText);
+document.addEventListener('mousemove', dragText);
+document.addEventListener('mouseup', stopDraggingText);
 
 history.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
