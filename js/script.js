@@ -10,8 +10,13 @@ let history = [];
 let redoStack = [];
 let eraserSize = 5;
 const textInput = document.getElementById('text-input');
+let objects = [];
+let selectedObject = null;
 
 function startDrawing(e) {
+    startX = e.offsetX;
+    startY = e.offsetY;
+
     if (tool === 'text') {
         textInput.style.display = 'block';
         textInput.style.left = `${e.clientX}px`;
@@ -20,9 +25,14 @@ function startDrawing(e) {
         textInput.focus();
         return;
     }
+
+    selectedObject = objects.find(obj => ctx.isPointInPath(obj.path, startX, startY));
+    if (selectedObject) {
+        drawing = true;
+        return;
+    }
+
     drawing = true;
-    startX = e.offsetX;
-    startY = e.offsetY;
     ctx.beginPath();
     ctx.moveTo(startX, startY);
 }
@@ -31,6 +41,18 @@ function draw(e) {
     if (!drawing) return;
     const x = e.offsetX;
     const y = e.offsetY;
+
+    if (selectedObject) {
+        const dx = x - startX;
+        const dy = y - startY;
+        selectedObject.x += dx;
+        selectedObject.y += dy;
+        startX = x;
+        startY = y;
+        redraw();
+        return;
+    }
+
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.putImageData(history[history.length - 1], 0, 0);
 
@@ -69,6 +91,16 @@ function draw(e) {
 function stopDrawing() {
     if (!drawing) return;
     drawing = false;
+
+    if (selectedObject) {
+        selectedObject = null;
+        return;
+    }
+
+    const path = new Path2D();
+    path.rect(startX, startY, canvas.width, canvas.height);
+    objects.push({ path, x: startX, y: startY });
+
     history.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
     redoStack = [];
 }
@@ -116,6 +148,17 @@ function drawArrow(fromX, fromY, toX, toY) {
     ctx.stroke();
 }
 
+function redraw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    history.forEach(imageData => ctx.putImageData(imageData, 0, 0));
+    objects.forEach(obj => {
+        ctx.save();
+        ctx.translate(obj.x, obj.y);
+        ctx.stroke(obj.path);
+        ctx.restore();
+    });
+}
+
 document.getElementById('shape-select').onchange = (e) => tool = e.target.value;
 document.getElementById('freeform').onclick = () => tool = 'freeform';
 document.getElementById('text').onclick = () => tool = 'text';
@@ -148,7 +191,10 @@ document.getElementById('export').onclick = () => {
 textInput.onkeydown = (e) => {
     if (e.key === 'Enter') {
         ctx.font = '20px Arial';
-        ctx.fillText(textInput.value, parseInt(textInput.style.left), parseInt(textInput.style.top) + 20);
+        ctx.fillText(textInput.value, startX, startY + 20);
+        const path = new Path2D();
+        path.rect(startX, startY, ctx.measureText(textInput.value).width, 20);
+        objects.push({ path, x: startX, y: startY });
         textInput.style.display = 'none';
         textInput.value = '';
         history.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
