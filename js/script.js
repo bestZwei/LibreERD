@@ -8,6 +8,7 @@ let tool = 'rectangle';
 let startX, startY;
 let history = [];
 let redoStack = [];
+const textInput = document.getElementById('text-input');
 
 function startDrawing(e) {
     drawing = true;
@@ -104,18 +105,14 @@ function drawArrow(fromX, fromY, toX, toY) {
     ctx.stroke();
 }
 
-document.getElementById('rectangle').onclick = () => tool = 'rectangle';
-document.getElementById('rounded-rectangle').onclick = () => tool = 'rounded-rectangle';
-document.getElementById('ellipse').onclick = () => tool = 'ellipse';
-document.getElementById('diamond').onclick = () => tool = 'diamond';
+document.getElementById('shape-select').onchange = (e) => tool = e.target.value;
 document.getElementById('freeform').onclick = () => tool = 'freeform';
 document.getElementById('text').onclick = () => {
-    const text = prompt('Enter text:');
-    if (text) {
-        ctx.font = '20px Arial';
-        ctx.fillText(text, startX, startY);
-        history.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
-    }
+    tool = 'text';
+    textInput.style.display = 'block';
+    textInput.style.left = `${startX}px`;
+    textInput.style.top = `${startY}px`;
+    textInput.focus();
 };
 document.getElementById('line').onclick = () => tool = 'line';
 document.getElementById('arrow').onclick = () => tool = 'arrow';
@@ -137,6 +134,16 @@ document.getElementById('export').onclick = () => {
     link.download = 'drawing.png';
     link.href = canvas.toDataURL();
     link.click();
+};
+
+textInput.onkeydown = (e) => {
+    if (e.key === 'Enter') {
+        ctx.font = '20px Arial';
+        ctx.fillText(textInput.value, startX, startY);
+        textInput.style.display = 'none';
+        textInput.value = '';
+        history.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
+    }
 };
 
 canvas.addEventListener('mousedown', startDrawing);

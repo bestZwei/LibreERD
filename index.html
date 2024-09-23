@@ -8,10 +8,12 @@
 </head>
 <body>
     <div id="toolbar">
-        <button id="rectangle">Rectangle</button>
-        <button id="rounded-rectangle">Rounded Rectangle</button>
-        <button id="ellipse">Ellipse</button>
-        <button id="diamond">Diamond</button>
+        <select id="shape-select">
+            <option value="rectangle">Rectangle</option>
+            <option value="rounded-rectangle">Rounded Rectangle</option>
+            <option value="ellipse">Ellipse</option>
+            <option value="diamond">Diamond</option>
+        </select>
         <button id="freeform">Freeform</button>
         <button id="text">Text</button>
         <button id="line">Line</button>
@@ -22,6 +24,7 @@
         <button id="export">Export</button>
     </div>
     <canvas id="canvas"></canvas>
+    <input type="text" id="text-input" style="display:none; position:absolute;">
     <script src="js/script.js"></script>
 </body>
 </html>
