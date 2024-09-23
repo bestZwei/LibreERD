@@ -13,6 +13,9 @@ button, select, input[type="color"] {
     margin: 5px;
     padding: 10px;
     font-size: 16px;
+    border: none; /* 移除边框 */
+    background: none; /* 移除背景 */
+    cursor: pointer; /* 鼠标悬停时显示为手形 */
 }
 
 #canvas {
@@ -45,4 +48,23 @@ button:hover::after {
     border-radius: 5px;
     white-space: nowrap;
     font-size: 12px;
+}
+
+input[type="color"] {
+    -webkit-appearance: none; /* 隐藏默认样式 */
+    appearance: none; /* 隐藏默认样式 */
+    width: 30px;
+    height: 30px;
+    border-radius: 5px;
+    overflow: hidden;
+    cursor: pointer;
+    border: 1px solid #ccc;
+}
+
+input[type="color"]::-webkit-color-swatch-wrapper {
+    padding: 0;
+}
+
+input[type="color"]::-webkit-color-swatch {
+    border: none;
 }
