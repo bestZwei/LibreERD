@@ -225,7 +225,18 @@ document.getElementById('redo').onclick = () => {
 document.getElementById('export').onclick = () => {
     const link = document.createElement('a');
     link.download = 'drawing.png';
-    link.href = canvas.toDataURL();
+    const exportCanvas = document.createElement('canvas');
+    exportCanvas.width = canvas.width;
+    exportCanvas.height = canvas.height;
+    const exportCtx = exportCanvas.getContext('2d');
+
+    if (document.getElementById('background-color').checked) {
+        exportCtx.fillStyle = 'white';
+        exportCtx.fillRect(0, 0, exportCanvas.width, exportCanvas.height);
+    }
+
+    exportCtx.drawImage(canvas, 0, 0);
+    link.href = exportCanvas.toDataURL();
     link.click();
 };
 
