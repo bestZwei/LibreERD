@@ -13,6 +13,8 @@
             <option value="rounded-rectangle">Rounded Rectangle</option>
             <option value="ellipse">Ellipse</option>
             <option value="diamond">Diamond</option>
+            <option value="triangle">Triangle</option>
+            <option value="pentagon">Pentagon</option>
         </select>
         <button id="freeform" data-tooltip="Freeform Drawing (F)">Freeform</button>
         <button id="text" data-tooltip="Text Tool (T)">Text</button>
@@ -38,10 +40,7 @@
     </div>
     <div id="canvas-container">
         <canvas id="canvas"></canvas>
-        <div class="resize-handle" id="resize-top-left"></div>
-        <div class="resize-handle" id="resize-top-right"></div>
-        <div class="resize-handle" id="resize-bottom-left"></div>
-        <div class="resize-handle" id="resize-bottom-right"></div>
+        <div id="resize-handle"></div>
     </div>
     <input type="text" id="text-input" style="display:none; position:absolute;">
     <script src="js/script.js"></script>

@@ -1,7 +1,7 @@
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
 const canvasContainer = document.getElementById('canvas-container');
-const resizeHandles = document.querySelectorAll('.resize-handle');
+const resizeHandle = document.getElementById('resize-handle');
 canvas.width = window.innerWidth - 40;
 canvas.height = window.innerHeight - 140;
 
@@ -20,7 +20,6 @@ const maxHistory = 50;
 let isDashed = false;
 let isResizing = false;
 let lastX, lastY;
-let resizeDirection = '';
 
 function startDrawing(e) {
     if (tool === 'text') {
@@ -73,6 +72,12 @@ function draw(e) {
             break;
         case 'diamond':
             drawDiamond(startX, startY, x - startX, y - startY);
+            break;
+        case 'triangle':
+            drawTriangle(startX, startY, x - startX, y - startY);
+            break;
+        case 'pentagon':
+            drawPentagon(startX, startY, x - startX, y - startY);
             break;
         case 'freeform':
             ctx.lineTo(x, y);
@@ -140,6 +145,34 @@ function drawDiamond(x, y, width, height) {
     ctx.stroke();
 }
 
+function drawTriangle(x, y, width, height) {
+    ctx.beginPath();
+    ctx.moveTo(x + width / 2, y);
+    ctx.lineTo(x + width, y + height);
+    ctx.lineTo(x, y + height);
+    ctx.closePath();
+    ctx.stroke();
+}
+
+function drawPentagon(x, y, width, height) {
+    const centerX = x + width / 2;
+    const centerY = y + height / 2;
+    const radius = Math.min(width, height) / 2;
+    ctx.beginPath();
+    for (let i = 0; i < 5; i++) {
+        const angle = (Math.PI / 2) + (i * 2 * Math.PI / 5);
+        const px = centerX + radius * Math.cos(angle);
+        const py = centerY - radius * Math.sin(angle);
+        if (i === 0) {
+            ctx.moveTo(px, py);
+        } else {
+            ctx.lineTo(px, py);
+        }
+    }
+    ctx.closePath();
+    ctx.stroke();
+}
+
 function drawArrow(fromX, fromY, toX, toY) {
     const headlen = 10;
     const angle = Math.atan2(toY - fromY, toX - fromX);
@@ -198,45 +231,20 @@ function throttle(func, limit) {
     };
 }
 
-function startResizing(e, direction) {
+function startResizing(e) {
     isResizing = true;
     lastX = e.clientX;
     lastY = e.clientY;
-    resizeDirection = direction;
 }
 
 function resizeCanvas(e) {
     if (!isResizing) return;
     const dx = e.clientX - lastX;
     const dy = e.clientY - lastY;
-
-    switch (resizeDirection) {
-        case 'top-left':
-            canvas.width -= dx;
-            canvas.height -= dy;
-            canvasContainer.style.width = `${canvas.width}px`;
-            canvasContainer.style.height = `${canvas.height}px`;
-            break;
-        case 'top-right':
-            canvas.width += dx;
-            canvas.height -= dy;
-            canvasContainer.style.width = `${canvas.width}px`;
-            canvasContainer.style.height = `${canvas.height}px`;
-            break;
-        case 'bottom-left':
-            canvas.width -= dx;
-            canvas.height += dy;
-            canvasContainer.style.width = `${canvas.width}px`;
-            canvasContainer.style.height = `${canvas.height}px`;
-            break;
-        case 'bottom-right':
-            canvas.width += dx;
-            canvas.height += dy;
-            canvasContainer.style.width = `${canvas.width}px`;
-            canvasContainer.style.height = `${canvas.height}px`;
-            break;
-    }
-
+    canvas.width += dx;
+    canvas.height += dy;
+    canvasContainer.style.width = `${canvas.width}px`;
+    canvasContainer.style.height = `${canvas.height}px`;
     lastX = e.clientX;
     lastY = e.clientY;
     ctx.putImageData(history[history.length - 1], 0, 0);
@@ -330,9 +338,7 @@ textInput.addEventListener('mousedown', startDraggingText);
 document.addEventListener('mousemove', dragText);
 document.addEventListener('mouseup', stopDraggingText);
 
-resizeHandles.forEach(handle => {
-    handle.addEventListener('mousedown', (e) => startResizing(e, handle.id.split('-')[1]));
-});
+resizeHandle.addEventListener('mousedown', startResizing);
 document.addEventListener('mousemove', resizeCanvas);
 document.addEventListener('mouseup', stopResizing);
 
