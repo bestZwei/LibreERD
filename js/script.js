@@ -240,6 +240,7 @@ textInput.onkeydown = (e) => {
             });
             textInput.style.display = 'none';
             textInput.value = '';
+            stopDraggingText(); // 重置拖动状态
             if (history.length >= maxHistory) {
                 history.shift();
             }
