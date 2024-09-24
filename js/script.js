@@ -173,6 +173,7 @@ function fixSelection(e) {
     ctx.putImageData(selection.imageData, x, y);
     selection = null;
     isDraggingSelection = false;
+    ctx.putImageData(history[history.length - 1], 0, 0);
     history.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
 }
 
