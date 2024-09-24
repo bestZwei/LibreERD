@@ -241,24 +241,19 @@ document.getElementById('export').onclick = () => {
 };
 
 document.getElementById('resize-canvas').onclick = () => {
-    const width = parseInt(document.getElementById('canvas-width').value);
-    const height = parseInt(document.getElementById('canvas-height').value);
-    if (width > 0 && height > 0) {
-        resizeCanvas(width, height);
+    const newWidth = parseInt(document.getElementById('canvas-width').value);
+    const newHeight = parseInt(document.getElementById('canvas-height').value);
+    if (newWidth && newHeight) {
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        canvas.width = newWidth;
+        canvas.height = newHeight;
+        ctx.putImageData(imageData, 0, 0);
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.putImageData(imageData, 0, 0);
+        history.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
     }
 };
-
-document.getElementById('fit-window').onclick = () => {
-    resizeCanvas(window.innerWidth - 20, window.innerHeight - 100);
-};
-
-function resizeCanvas(width, height) {
-    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    canvas.width = width;
-    canvas.height = height;
-    ctx.putImageData(imageData, 0, 0);
-    history.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
-}
 
 textInput.oninput = adjustTextInputSize;
 
