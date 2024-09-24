@@ -25,7 +25,6 @@ const minHeight = 100;
 let selection = null;
 let isSelecting = false;
 let isDraggingSelection = false;
-let selectionOffsetX, selectionOffsetY;
 
 function startDrawing(e) {
     if (tool === 'text') {
@@ -140,8 +139,6 @@ function stopDrawing(e) {
         };
         isSelecting = false;
         isDraggingSelection = true;
-        selectionOffsetX = e.offsetX - selection.x;
-        selectionOffsetY = e.offsetY - selection.y;
         ctx.putImageData(history[history.length - 1], 0, 0);
         ctx.clearRect(selection.x, selection.y, selection.width, selection.height);
         history.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
@@ -159,8 +156,8 @@ function stopDrawing(e) {
 
 function dragSelection(e) {
     if (!isDraggingSelection || !selection) return;
-    const x = e.offsetX - selectionOffsetX;
-    const y = e.offsetY - selectionOffsetY;
+    const x = e.offsetX - selection.width / 2;
+    const y = e.offsetY - selection.height / 2;
     ctx.putImageData(history[history.length - 1], 0, 0);
     ctx.putImageData(selection.imageData, x, y);
     ctx.setLineDash([5, 5]);
@@ -171,8 +168,8 @@ function dragSelection(e) {
 
 function fixSelection(e) {
     if (!selection) return;
-    const x = e.offsetX - selectionOffsetX;
-    const y = e.offsetY - selectionOffsetY;
+    const x = e.offsetX - selection.width / 2;
+    const y = e.offsetY - selection.height / 2;
     ctx.putImageData(selection.imageData, x, y);
     selection = null;
     isDraggingSelection = false;
@@ -415,7 +412,7 @@ canvas.addEventListener('mouseout', stopDrawing);
 
 canvas.addEventListener('mousemove', dragSelection);
 canvas.addEventListener('dblclick', fixSelection);
-canvas.addEventListener('keydown', (e) => {
+document.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
         fixSelection(e);
     }
