@@ -22,10 +22,6 @@ let isResizing = false;
 let lastX, lastY;
 const minWidth = 100;
 const minHeight = 100;
-let selection = null;
-let isSelecting = false;
-let isDraggingSelection = false;
-let selectionOffsetX, selectionOffsetY;
 
 function startDrawing(e) {
     if (tool === 'text') {
@@ -40,12 +36,6 @@ function startDrawing(e) {
         adjustTextInputSize();
         return;
     }
-    if (tool === 'select') {
-        startX = e.offsetX;
-        startY = e.offsetY;
-        isSelecting = true;
-        return;
-    }
     drawing = true;
     startX = e.offsetX;
     startY = e.offsetY;
@@ -54,17 +44,6 @@ function startDrawing(e) {
 }
 
 function draw(e) {
-    if (isSelecting) {
-        const x = e.offsetX;
-        const y = e.offsetY;
-        ctx.putImageData(history[history.length - 1], 0, 0);
-        ctx.setLineDash([5, 5]);
-        ctx.strokeStyle = 'gray';
-        ctx.strokeRect(startX, startY, x - startX, y - startY);
-        ctx.setLineDash([]);
-        return;
-    }
-
     if (!drawing) return;
     const x = e.offsetX;
     const y = e.offsetY;
@@ -127,25 +106,7 @@ function erase(x, y) {
     ctx.restore();
 }
 
-function stopDrawing(e) {
-    if (isSelecting) {
-        const x = e.offsetX;
-        const y = e.offsetY;
-        selection = {
-            x: Math.min(startX, x),
-            y: Math.min(startY, y),
-            width: Math.abs(x - startX),
-            height: Math.abs(y - startY),
-            imageData: ctx.getImageData(Math.min(startX, x), Math.min(startY, y), Math.abs(x - startX), Math.abs(y - startY))
-        };
-        isSelecting = false;
-        isDraggingSelection = true;
-        selectionOffsetX = e.offsetX - selection.x;
-        selectionOffsetY = e.offsetY - selection.y;
-        ctx.putImageData(history[history.length - 1], 0, 0);
-        return;
-    }
-
+function stopDrawing() {
     if (!drawing) return;
     drawing = false;
     if (history.length >= maxHistory) {
@@ -153,28 +114,6 @@ function stopDrawing(e) {
     }
     history.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
     redoStack = [];
-}
-
-function dragSelection(e) {
-    if (!isDraggingSelection || !selection) return;
-    const x = e.offsetX - selectionOffsetX;
-    const y = e.offsetY - selectionOffsetY;
-    ctx.putImageData(history[history.length - 1], 0, 0);
-    ctx.putImageData(selection.imageData, x, y);
-    ctx.setLineDash([5, 5]);
-    ctx.strokeStyle = 'gray';
-    ctx.strokeRect(x, y, selection.width, selection.height);
-    ctx.setLineDash([]);
-}
-
-function fixSelection() {
-    if (!selection) return;
-    const x = selection.x;
-    const y = selection.y;
-    ctx.putImageData(selection.imageData, x, y);
-    selection = null;
-    isDraggingSelection = false;
-    history.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
 }
 
 function drawRoundedRect(x, y, width, height, radius) {
@@ -346,7 +285,6 @@ document.getElementById('color-picker').onchange = (e) => {
     ctx.fillStyle = currentColor;
 };
 document.getElementById('dashed-line').onchange = (e) => isDashed = e.target.checked;
-document.getElementById('select').onclick = () => tool = 'select';
 document.getElementById('clear').onclick = clearCanvas;
 document.getElementById('undo').onclick = () => {
     if (history.length > 1) {
@@ -411,15 +349,6 @@ canvas.addEventListener('mousemove', throttle(draw, 10));
 canvas.addEventListener('mouseup', stopDrawing);
 canvas.addEventListener('mouseout', stopDrawing);
 
-canvas.addEventListener('mousemove', dragSelection);
-canvas.addEventListener('mouseup', () => isDraggingSelection = false);
-canvas.addEventListener('dblclick', fixSelection);
-document.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
-        fixSelection();
-    }
-});
-
 textInput.addEventListener('mousedown', startDraggingText);
 document.addEventListener('mousemove', dragText);
 document.addEventListener('mouseup', stopDraggingText);
@@ -443,8 +372,6 @@ document.addEventListener('keydown', (e) => {
         tool = 'arrow';
     } else if (e.key === 'e') {
         tool = 'eraser';
-    } else if (e.key === 's') {
-        tool = 'select';
     }
 });
 
