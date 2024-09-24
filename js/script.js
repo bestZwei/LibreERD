@@ -15,6 +15,8 @@ const textInput = document.getElementById('text-input');
 let isDraggingText = false;
 let offsetX, offsetY;
 const maxHistory = 50;
+let selection = null;
+let isDraggingSelection = false;
 
 function startDrawing(e) {
     if (tool === 'text') {
@@ -27,6 +29,12 @@ function startDrawing(e) {
         textInput.value = '';
         textInput.focus();
         adjustTextInputSize();
+        return;
+    }
+    if (tool === 'select') {
+        drawing = true;
+        startX = e.offsetX;
+        startY = e.offsetY;
         return;
     }
     drawing = true;
@@ -48,6 +56,13 @@ function draw(e) {
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.putImageData(history[history.length - 1], 0, 0);
+
+    if (tool === 'select') {
+        ctx.setLineDash([5, 5]);
+        ctx.strokeRect(startX, startY, x - startX, y - startY);
+        ctx.setLineDash([]);
+        return;
+    }
 
     switch (tool) {
         case 'rectangle':
@@ -87,9 +102,21 @@ function erase(x, y) {
     ctx.restore();
 }
 
-function stopDrawing() {
+function stopDrawing(e) {
     if (!drawing) return;
     drawing = false;
+    if (tool === 'select') {
+        const x = e.offsetX;
+        const y = e.offsetY;
+        selection = {
+            x: Math.min(startX, x),
+            y: Math.min(startY, y),
+            width: Math.abs(x - startX),
+            height: Math.abs(y - startY),
+            imageData: ctx.getImageData(Math.min(startX, x), Math.min(startY, y), Math.abs(x - startX), Math.abs(y - startY))
+        };
+        return;
+    }
     if (history.length >= maxHistory) {
         history.shift();
     }
@@ -220,6 +247,7 @@ document.getElementById('export').onclick = () => {
     link.href = canvas.toDataURL();
     link.click();
 };
+document.getElementById('select').onclick = () => tool = 'select';
 
 textInput.oninput = adjustTextInputSize;
 
@@ -249,10 +277,39 @@ textInput.onkeydown = (e) => {
     }
 };
 
-canvas.addEventListener('mousedown', startDrawing);
-canvas.addEventListener('mousemove', throttle(draw, 10));
-canvas.addEventListener('mouseup', stopDrawing);
-canvas.addEventListener('mouseout', stopDrawing);
+canvas.addEventListener('mousedown', (e) => {
+    if (tool === 'select' && selection && isInsideSelection(e.offsetX, e.offsetY)) {
+        isDraggingSelection = true;
+        offsetX = e.offsetX - selection.x;
+        offsetY = e.offsetY - selection.y;
+    } else {
+        startDrawing(e);
+    }
+});
+
+canvas.addEventListener('mousemove', throttle((e) => {
+    if (isDraggingSelection) {
+        moveSelection(e.offsetX - offsetX, e.offsetY - offsetY);
+    } else {
+        draw(e);
+    }
+}, 10));
+
+canvas.addEventListener('mouseup', (e) => {
+    if (isDraggingSelection) {
+        isDraggingSelection = false;
+    } else {
+        stopDrawing(e);
+    }
+});
+
+canvas.addEventListener('mouseout', (e) => {
+    if (isDraggingSelection) {
+        isDraggingSelection = false;
+    } else {
+        stopDrawing(e);
+    }
+});
 
 textInput.addEventListener('mousedown', startDraggingText);
 document.addEventListener('mousemove', dragText);
@@ -273,7 +330,21 @@ document.addEventListener('keydown', (e) => {
         tool = 'arrow';
     } else if (e.key === 'e') {
         tool = 'eraser';
+    } else if (e.key === 's') {
+        tool = 'select';
     }
 });
+
+function isInsideSelection(x, y) {
+    return selection && x >= selection.x && x <= selection.x + selection.width && y >= selection.y && y <= selection.y + selection.height;
+}
+
+function moveSelection(x, y) {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.putImageData(history[history.length - 1], 0, 0);
+    ctx.putImageData(selection.imageData, x, y);
+    selection.x = x;
+    selection.y = y;
+}
 
 history.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
