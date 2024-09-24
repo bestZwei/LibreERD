@@ -15,14 +15,7 @@ const textInput = document.getElementById('text-input');
 let isDraggingText = false;
 let offsetX, offsetY;
 const maxHistory = 50;
-
-// Selection variables
-let isSelecting = false;
-let selectionStartX, selectionStartY;
-let selectionWidth, selectionHeight;
-let isDraggingSelection = false;
-let selectionImageData = null;
-let selectionOffsetX, selectionOffsetY;
+let selection = null;
 
 function startDrawing(e) {
     if (tool === 'text') {
@@ -37,21 +30,19 @@ function startDrawing(e) {
         adjustTextInputSize();
         return;
     }
-    if (tool === 'select') {
-        isSelecting = true;
-        selectionStartX = e.offsetX;
-        selectionStartY = e.offsetY;
-        return;
-    }
     drawing = true;
     startX = e.offsetX;
     startY = e.offsetY;
-    ctx.beginPath();
-    ctx.moveTo(startX, startY);
+    if (tool === 'select') {
+        selection = { x: startX, y: startY, width: 0, height: 0 };
+    } else {
+        ctx.beginPath();
+        ctx.moveTo(startX, startY);
+    }
 }
 
 function draw(e) {
-    if (!drawing && !isSelecting) return;
+    if (!drawing) return;
     const x = e.offsetX;
     const y = e.offsetY;
 
@@ -63,41 +54,40 @@ function draw(e) {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.putImageData(history[history.length - 1], 0, 0);
 
-    if (isSelecting) {
-        selectionWidth = x - selectionStartX;
-        selectionHeight = y - selectionStartY;
-        ctx.setLineDash([6]);
-        ctx.strokeRect(selectionStartX, selectionStartY, selectionWidth, selectionHeight);
+    if (tool === 'select') {
+        selection.width = x - startX;
+        selection.height = y - startY;
+        ctx.setLineDash([5, 5]);
+        ctx.strokeRect(selection.x, selection.y, selection.width, selection.height);
         ctx.setLineDash([]);
-        return;
-    }
-
-    switch (tool) {
-        case 'rectangle':
-            ctx.strokeRect(startX, startY, x - startX, y - startY);
-            break;
-        case 'rounded-rectangle':
-            drawRoundedRect(startX, startY, x - startX, y - startY, 20);
-            break;
-        case 'ellipse':
-            drawEllipse(startX, startY, x - startX, y - startY);
-            break;
-        case 'diamond':
-            drawDiamond(startX, startY, x - startX, y - startY);
-            break;
-        case 'freeform':
-            ctx.lineTo(x, y);
-            ctx.stroke();
-            break;
-        case 'line':
-            ctx.beginPath();
-            ctx.moveTo(startX, startY);
-            ctx.lineTo(x, y);
-            ctx.stroke();
-            break;
-        case 'arrow':
-            drawArrow(startX, startY, x, y);
-            break;
+    } else {
+        switch (tool) {
+            case 'rectangle':
+                ctx.strokeRect(startX, startY, x - startX, y - startY);
+                break;
+            case 'rounded-rectangle':
+                drawRoundedRect(startX, startY, x - startX, y - startY, 20);
+                break;
+            case 'ellipse':
+                drawEllipse(startX, startY, x - startX, y - startY);
+                break;
+            case 'diamond':
+                drawDiamond(startX, startY, x - startX, y - startY);
+                break;
+            case 'freeform':
+                ctx.lineTo(x, y);
+                ctx.stroke();
+                break;
+            case 'line':
+                ctx.beginPath();
+                ctx.moveTo(startX, startY);
+                ctx.lineTo(x, y);
+                ctx.stroke();
+                break;
+            case 'arrow':
+                drawArrow(startX, startY, x, y);
+                break;
+        }
     }
 }
 
@@ -110,61 +100,21 @@ function erase(x, y) {
     ctx.restore();
 }
 
-function stopDrawing(e) {
-    if (isSelecting) {
-        isSelecting = false;
-        selectionImageData = ctx.getImageData(selectionStartX, selectionStartY, selectionWidth, selectionHeight);
-        ctx.clearRect(selectionStartX, selectionStartY, selectionWidth, selectionHeight);
-        ctx.putImageData(history[history.length - 1], 0, 0);
-        ctx.setLineDash([6]);
-        ctx.strokeRect(selectionStartX, selectionStartY, selectionWidth, selectionHeight);
-        ctx.setLineDash([]);
-        isDraggingSelection = true;
-        selectionOffsetX = e.offsetX - selectionStartX;
-        selectionOffsetY = e.offsetY - selectionStartY;
-        return;
-    }
+function stopDrawing() {
     if (!drawing) return;
     drawing = false;
-    if (history.length >= maxHistory) {
-        history.shift();
-    }
-    history.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
-    redoStack = [];
-}
-
-function dragSelection(e) {
-    if (!isDraggingSelection) return;
-    const x = e.offsetX - selectionOffsetX;
-    const y = e.offsetY - selectionOffsetY;
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.putImageData(history[history.length - 1], 0, 0);
-    ctx.putImageData(selectionImageData, x, y);
-    ctx.setLineDash([6]);
-    ctx.strokeRect(x, y, selectionWidth, selectionHeight);
-    ctx.setLineDash([]);
-}
-
-function confirmSelection(e) {
-    if (isDraggingSelection) {
-        isDraggingSelection = false;
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.putImageData(history[history.length - 1], 0, 0);
-        ctx.putImageData(selectionImageData, e.offsetX - selectionOffsetX, e.offsetY - selectionOffsetY);
+    if (tool === 'select') {
+        if (selection.width && selection.height) {
+            const imageData = ctx.getImageData(selection.x, selection.y, selection.width, selection.height);
+            ctx.clearRect(selection.x, selection.y, selection.width, selection.height);
+            selection.imageData = imageData;
+        }
+    } else {
         if (history.length >= maxHistory) {
             history.shift();
         }
         history.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
-        selectionImageData = null;
-    }
-}
-
-function deleteSelection() {
-    if (isDraggingSelection) {
-        isDraggingSelection = false;
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.putImageData(history[history.length - 1], 0, 0);
-        selectionImageData = null;
+        redoStack = [];
     }
 }
 
@@ -311,7 +261,7 @@ textInput.onkeydown = (e) => {
             });
             textInput.style.display = 'none';
             textInput.value = '';
-            stopDraggingText(); // 重置拖动状态
+            stopDraggingText();
             if (history.length >= maxHistory) {
                 history.shift();
             }
@@ -323,8 +273,6 @@ textInput.onkeydown = (e) => {
 canvas.addEventListener('mousedown', startDrawing);
 canvas.addEventListener('mousemove', throttle(draw, 10));
 canvas.addEventListener('mouseup', stopDrawing);
-canvas.addEventListener('mousemove', dragSelection);
-canvas.addEventListener('dblclick', confirmSelection);
 canvas.addEventListener('mouseout', stopDrawing);
 
 textInput.addEventListener('mousedown', startDraggingText);
@@ -346,8 +294,23 @@ document.addEventListener('keydown', (e) => {
         tool = 'arrow';
     } else if (e.key === 'e') {
         tool = 'eraser';
-    } else if (e.key === 'Delete' || e.key === 'Backspace') {
-        deleteSelection();
+    } else if (e.key === 'Backspace' && selection) {
+        ctx.clearRect(selection.x, selection.y, selection.width, selection.height);
+        selection = null;
+    }
+});
+
+canvas.addEventListener('dblclick', () => {
+    if (selection && selection.imageData) {
+        ctx.putImageData(selection.imageData, selection.x, selection.y);
+        selection = null;
+    }
+});
+
+canvas.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && selection && selection.imageData) {
+        ctx.putImageData(selection.imageData, selection.x, selection.y);
+        selection = null;
     }
 });
 
