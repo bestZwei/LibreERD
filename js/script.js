@@ -1,7 +1,9 @@
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
-canvas.width = window.innerWidth - 20;
-canvas.height = window.innerHeight - 100;
+const canvasContainer = document.getElementById('canvas-container');
+const resizeHandle = document.getElementById('resize-handle');
+canvas.width = window.innerWidth - 40;
+canvas.height = window.innerHeight - 140;
 
 let drawing = false;
 let tool = 'rectangle';
@@ -16,6 +18,8 @@ let isDraggingText = false;
 let offsetX, offsetY;
 const maxHistory = 50;
 let isDashed = false;
+let isResizing = false;
+let lastX, lastY;
 
 function startDrawing(e) {
     if (tool === 'text') {
@@ -193,6 +197,29 @@ function throttle(func, limit) {
     };
 }
 
+function startResizing(e) {
+    isResizing = true;
+    lastX = e.clientX;
+    lastY = e.clientY;
+}
+
+function resizeCanvas(e) {
+    if (!isResizing) return;
+    const dx = e.clientX - lastX;
+    const dy = e.clientY - lastY;
+    canvas.width += dx;
+    canvas.height += dy;
+    canvasContainer.style.width = `${canvas.width}px`;
+    canvasContainer.style.height = `${canvas.height}px`;
+    lastX = e.clientX;
+    lastY = e.clientY;
+    ctx.putImageData(history[history.length - 1], 0, 0);
+}
+
+function stopResizing() {
+    isResizing = false;
+}
+
 document.getElementById('shape-select').onchange = (e) => tool = e.target.value;
 document.getElementById('freeform').onclick = () => tool = 'freeform';
 document.getElementById('text').onclick = () => tool = 'text';
@@ -240,20 +267,6 @@ document.getElementById('export').onclick = () => {
     link.click();
 };
 
-document.getElementById('increase-size').onclick = () => {
-    canvas.width += 100;
-    canvas.height += 100;
-    ctx.putImageData(history[history.length - 1], 0, 0);
-};
-
-document.getElementById('decrease-size').onclick = () => {
-    if (canvas.width > 200 && canvas.height > 200) {
-        canvas.width -= 100;
-        canvas.height -= 100;
-        ctx.putImageData(history[history.length - 1], 0, 0);
-    }
-};
-
 textInput.oninput = adjustTextInputSize;
 
 textInput.onkeydown = (e) => {
@@ -290,6 +303,10 @@ canvas.addEventListener('mouseout', stopDrawing);
 textInput.addEventListener('mousedown', startDraggingText);
 document.addEventListener('mousemove', dragText);
 document.addEventListener('mouseup', stopDraggingText);
+
+resizeHandle.addEventListener('mousedown', startResizing);
+document.addEventListener('mousemove', resizeCanvas);
+document.addEventListener('mouseup', stopResizing);
 
 document.addEventListener('keydown', (e) => {
     if (e.ctrlKey && e.key === 'z') {

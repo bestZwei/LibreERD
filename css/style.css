@@ -40,16 +40,26 @@ button:hover, select:hover, input[type="color"]:hover {
 #canvas-container {
     position: relative;
     display: inline-block;
-}
-
-#canvas {
+    background-color: white;
     border: 1px solid #ccc;
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+#canvas {
+    display: block;
     cursor: crosshair;
-    background-color: white;
-    resize: both;
-    overflow: auto;
+}
+
+#resize-handle {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    background-color: #ccc;
+    bottom: 0;
+    right: 0;
+    cursor: se-resize;
+    border-radius: 50%;
 }
 
 #text-input {
