@@ -115,6 +115,8 @@ function stopDrawing(e) {
             height: Math.abs(y - startY),
             imageData: ctx.getImageData(Math.min(startX, x), Math.min(startY, y), Math.abs(x - startX), Math.abs(y - startY))
         };
+        ctx.clearRect(selection.x, selection.y, selection.width, selection.height);
+        ctx.putImageData(history[history.length - 1], 0, 0);
         return;
     }
     if (history.length >= maxHistory) {
@@ -311,18 +313,11 @@ canvas.addEventListener('mouseout', (e) => {
     }
 });
 
-canvas.addEventListener('dblclick', fixSelection);
-document.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' && selection) {
-        fixSelection();
-    } else if (e.key === 'Backspace' && selection) {
-        deleteSelection();
+canvas.addEventListener('dblclick', () => {
+    if (selection) {
+        finalizeSelection();
     }
 });
-
-textInput.addEventListener('mousedown', startDraggingText);
-document.addEventListener('mousemove', dragText);
-document.addEventListener('mouseup', stopDraggingText);
 
 document.addEventListener('keydown', (e) => {
     if (e.ctrlKey && e.key === 'z') {
@@ -341,6 +336,10 @@ document.addEventListener('keydown', (e) => {
         tool = 'eraser';
     } else if (e.key === 's') {
         tool = 'select';
+    } else if (e.key === 'Enter' && selection) {
+        finalizeSelection();
+    } else if (e.key === 'Backspace' && selection) {
+        deleteSelection();
     }
 });
 
@@ -356,26 +355,20 @@ function moveSelection(x, y) {
     selection.y = y;
 }
 
-function fixSelection() {
-    if (selection) {
-        ctx.putImageData(selection.imageData, selection.x, selection.y);
-        selection = null;
-        if (history.length >= maxHistory) {
-            history.shift();
-        }
-        history.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
-    }
+function finalizeSelection() {
+    ctx.putImageData(selection.imageData, selection.x, selection.y);
+    selection = null;
+    history.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
 }
 
 function deleteSelection() {
-    if (selection) {
-        ctx.clearRect(selection.x, selection.y, selection.width, selection.height);
-        selection = null;
-        if (history.length >= maxHistory) {
-            history.shift();
-        }
-        history.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
-    }
+    ctx.clearRect(selection.x, selection.y, selection.width, selection.height);
+    selection = null;
+    history.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
 }
+
+textInput.addEventListener('mousedown', startDraggingText);
+document.addEventListener('mousemove', dragText);
+document.addEventListener('mouseup', stopDraggingText);
 
 history.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
