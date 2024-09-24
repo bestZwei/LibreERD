@@ -39,6 +39,12 @@ function draw(e) {
     if (!drawing) return;
     const x = e.offsetX;
     const y = e.offsetY;
+
+    if (tool === 'eraser') {
+        erase(x, y);
+        return;
+    }
+
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.putImageData(history[history.length - 1], 0, 0);
 
@@ -67,9 +73,6 @@ function draw(e) {
             break;
         case 'arrow':
             drawArrow(startX, startY, x, y);
-            break;
-        case 'eraser':
-            erase(x, y);
             break;
     }
 }
@@ -239,7 +242,7 @@ textInput.onkeydown = (e) => {
 };
 
 canvas.addEventListener('mousedown', startDrawing);
-canvas.addEventListener('mousemove', throttle(draw, 50));
+canvas.addEventListener('mousemove', throttle(draw, 10));
 canvas.addEventListener('mouseup', stopDrawing);
 canvas.addEventListener('mouseout', stopDrawing);
 

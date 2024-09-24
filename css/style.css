@@ -13,9 +13,9 @@ button, select, input[type="color"] {
     margin: 5px;
     padding: 10px;
     font-size: 16px;
-    border: none; /* 移除边框 */
-    background: none; /* 移除背景 */
-    cursor: pointer; /* 鼠标悬停时显示为手形 */
+    border: none;
+    background: none;
+    cursor: pointer;
 }
 
 #canvas {
@@ -51,8 +51,8 @@ button:hover::after {
 }
 
 input[type="color"] {
-    -webkit-appearance: none; /* 隐藏默认样式 */
-    appearance: none; /* 隐藏默认样式 */
+    -webkit-appearance: none;
+    appearance: none;
     width: 30px;
     height: 30px;
     border-radius: 5px;
