@@ -26,8 +26,8 @@ const minHeight = 100;
 function startDrawing(e) {
     if (tool === 'text') {
         textInput.style.display = 'block';
-        textInput.style.left = `${e.offsetX + canvas.offsetLeft}px`;
-        textInput.style.top = `${e.offsetY + canvas.offsetTop}px`;
+        textInput.style.left = `${e.clientX}px`;
+        textInput.style.top = `${e.clientY}px`;
         textInput.style.fontSize = `${fontSize}px`;
         textInput.style.width = 'auto';
         textInput.style.height = 'auto';
@@ -320,27 +320,18 @@ textInput.oninput = adjustTextInputSize;
 
 textInput.onkeydown = (e) => {
     if (e.key === 'Enter') {
-        if (e.ctrlKey) {
-            textInput.value += '\n';
-            adjustTextInputSize();
-        } else {
-            const lines = textInput.value.split('\n');
-            const x = parseInt(textInput.style.left) - canvas.offsetLeft;
-            let y = parseInt(textInput.style.top) - canvas.offsetTop + fontSize;
-            ctx.font = `${fontSize}px Arial`;
-            ctx.fillStyle = currentColor;
-            lines.forEach(line => {
-                ctx.fillText(line, x, y);
-                y += fontSize;
-            });
-            textInput.style.display = 'none';
-            textInput.value = '';
-            stopDraggingText(); // 重置拖动状态
-            if (history.length >= maxHistory) {
-                history.shift();
-            }
-            history.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
+        const x = parseInt(textInput.style.left) - canvas.offsetLeft;
+        const y = parseInt(textInput.style.top) - canvas.offsetTop;
+        ctx.font = `${fontSize}px Arial`;
+        ctx.fillStyle = currentColor;
+        ctx.fillText(textInput.value, x, y + fontSize);
+        textInput.style.display = 'none';
+        textInput.value = '';
+        stopDraggingText();
+        if (history.length >= maxHistory) {
+            history.shift();
         }
+        history.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
     }
 };
 
