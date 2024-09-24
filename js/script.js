@@ -15,7 +15,9 @@ const textInput = document.getElementById('text-input');
 let isDraggingText = false;
 let offsetX, offsetY;
 const maxHistory = 50;
+
 let selection = null;
+let isDraggingSelection = false;
 
 function startDrawing(e) {
     if (tool === 'text') {
@@ -30,15 +32,24 @@ function startDrawing(e) {
         adjustTextInputSize();
         return;
     }
+
+    if (tool === 'select') {
+        selection = {
+            x: e.offsetX,
+            y: e.offsetY,
+            width: 0,
+            height: 0,
+            imageData: null
+        };
+        drawing = true;
+        return;
+    }
+
     drawing = true;
     startX = e.offsetX;
     startY = e.offsetY;
-    if (tool === 'select') {
-        selection = { x: startX, y: startY, width: 0, height: 0 };
-    } else {
-        ctx.beginPath();
-        ctx.moveTo(startX, startY);
-    }
+    ctx.beginPath();
+    ctx.moveTo(startX, startY);
 }
 
 function draw(e) {
@@ -55,39 +66,41 @@ function draw(e) {
     ctx.putImageData(history[history.length - 1], 0, 0);
 
     if (tool === 'select') {
-        selection.width = x - startX;
-        selection.height = y - startY;
-        ctx.setLineDash([5, 5]);
+        selection.width = x - selection.x;
+        selection.height = y - selection.y;
+        ctx.setLineDash([6]);
+        ctx.strokeStyle = 'black';
         ctx.strokeRect(selection.x, selection.y, selection.width, selection.height);
         ctx.setLineDash([]);
-    } else {
-        switch (tool) {
-            case 'rectangle':
-                ctx.strokeRect(startX, startY, x - startX, y - startY);
-                break;
-            case 'rounded-rectangle':
-                drawRoundedRect(startX, startY, x - startX, y - startY, 20);
-                break;
-            case 'ellipse':
-                drawEllipse(startX, startY, x - startX, y - startY);
-                break;
-            case 'diamond':
-                drawDiamond(startX, startY, x - startX, y - startY);
-                break;
-            case 'freeform':
-                ctx.lineTo(x, y);
-                ctx.stroke();
-                break;
-            case 'line':
-                ctx.beginPath();
-                ctx.moveTo(startX, startY);
-                ctx.lineTo(x, y);
-                ctx.stroke();
-                break;
-            case 'arrow':
-                drawArrow(startX, startY, x, y);
-                break;
-        }
+        return;
+    }
+
+    switch (tool) {
+        case 'rectangle':
+            ctx.strokeRect(startX, startY, x - startX, y - startY);
+            break;
+        case 'rounded-rectangle':
+            drawRoundedRect(startX, startY, x - startX, y - startY, 20);
+            break;
+        case 'ellipse':
+            drawEllipse(startX, startY, x - startX, y - startY);
+            break;
+        case 'diamond':
+            drawDiamond(startX, startY, x - startX, y - startY);
+            break;
+        case 'freeform':
+            ctx.lineTo(x, y);
+            ctx.stroke();
+            break;
+        case 'line':
+            ctx.beginPath();
+            ctx.moveTo(startX, startY);
+            ctx.lineTo(x, y);
+            ctx.stroke();
+            break;
+        case 'arrow':
+            drawArrow(startX, startY, x, y);
+            break;
     }
 }
 
@@ -103,19 +116,19 @@ function erase(x, y) {
 function stopDrawing() {
     if (!drawing) return;
     drawing = false;
-    if (tool === 'select') {
-        if (selection.width && selection.height) {
-            const imageData = ctx.getImageData(selection.x, selection.y, selection.width, selection.height);
-            ctx.clearRect(selection.x, selection.y, selection.width, selection.height);
-            selection.imageData = imageData;
-        }
-    } else {
-        if (history.length >= maxHistory) {
-            history.shift();
-        }
-        history.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
-        redoStack = [];
+
+    if (tool === 'select' && selection) {
+        selection.imageData = ctx.getImageData(selection.x, selection.y, selection.width, selection.height);
+        ctx.clearRect(selection.x, selection.y, selection.width, selection.height);
+        isDraggingSelection = true;
+        return;
     }
+
+    if (history.length >= maxHistory) {
+        history.shift();
+    }
+    history.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
+    redoStack = [];
 }
 
 function drawRoundedRect(x, y, width, height, radius) {
@@ -207,6 +220,30 @@ function throttle(func, limit) {
     };
 }
 
+function dragSelection(e) {
+    if (!isDraggingSelection || !selection) return;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.putImageData(history[history.length - 1], 0, 0);
+
+    const x = e.offsetX - selection.width / 2;
+    const y = e.offsetY - selection.height / 2;
+
+    ctx.putImageData(selection.imageData, x, y);
+    ctx.setLineDash([6]);
+    ctx.strokeStyle = 'black';
+    ctx.strokeRect(x, y, selection.width, selection.height);
+    ctx.setLineDash([]);
+}
+
+function stopDraggingSelection() {
+    if (!isDraggingSelection || !selection) return;
+
+    isDraggingSelection = false;
+    selection = null;
+    history.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
+}
+
 document.getElementById('shape-select').onchange = (e) => tool = e.target.value;
 document.getElementById('freeform').onclick = () => tool = 'freeform';
 document.getElementById('text').onclick = () => tool = 'text';
@@ -272,7 +309,9 @@ textInput.onkeydown = (e) => {
 
 canvas.addEventListener('mousedown', startDrawing);
 canvas.addEventListener('mousemove', throttle(draw, 10));
+canvas.addEventListener('mousemove', throttle(dragSelection, 10));
 canvas.addEventListener('mouseup', stopDrawing);
+canvas.addEventListener('mouseup', stopDraggingSelection);
 canvas.addEventListener('mouseout', stopDrawing);
 
 textInput.addEventListener('mousedown', startDraggingText);
@@ -294,23 +333,11 @@ document.addEventListener('keydown', (e) => {
         tool = 'arrow';
     } else if (e.key === 'e') {
         tool = 'eraser';
-    } else if (e.key === 'Backspace' && selection) {
+    } else if (e.key === 'Enter' && isDraggingSelection) {
+        stopDraggingSelection();
+    } else if (e.key === 'Backspace' && isDraggingSelection) {
         ctx.clearRect(selection.x, selection.y, selection.width, selection.height);
-        selection = null;
-    }
-});
-
-canvas.addEventListener('dblclick', () => {
-    if (selection && selection.imageData) {
-        ctx.putImageData(selection.imageData, selection.x, selection.y);
-        selection = null;
-    }
-});
-
-canvas.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' && selection && selection.imageData) {
-        ctx.putImageData(selection.imageData, selection.x, selection.y);
-        selection = null;
+        stopDraggingSelection();
     }
 });
 
