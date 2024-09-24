@@ -315,6 +315,8 @@ canvas.addEventListener('dblclick', fixSelection);
 document.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && selection) {
         fixSelection();
+    } else if (e.key === 'Backspace' && selection) {
+        deleteSelection();
     }
 });
 
@@ -360,6 +362,17 @@ function fixSelection() {
         selection = null;
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.putImageData(history[history.length - 1], 0, 0);
+        if (history.length >= maxHistory) {
+            history.shift();
+        }
+        history.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
+    }
+}
+
+function deleteSelection() {
+    if (selection) {
+        ctx.clearRect(selection.x, selection.y, selection.width, selection.height);
+        selection = null;
         if (history.length >= maxHistory) {
             history.shift();
         }
