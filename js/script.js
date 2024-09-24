@@ -22,9 +22,8 @@ let isResizing = false;
 let lastX, lastY;
 const minWidth = 100;
 const minHeight = 100;
-let selectedElement = null;
-let isDraggingElement = false;
-let elements = [];
+let selection = null;
+let isDraggingSelection = false;
 
 function startDrawing(e) {
     if (tool === 'text') {
@@ -40,12 +39,10 @@ function startDrawing(e) {
         return;
     }
     if (tool === 'select') {
-        selectedElement = getElementAtPosition(e.offsetX, e.offsetY);
-        if (selectedElement) {
-            isDraggingElement = true;
-            offsetX = e.offsetX - selectedElement.x;
-            offsetY = e.offsetY - selectedElement.y;
-        }
+        startX = e.offsetX;
+        startY = e.offsetY;
+        selection = null;
+        drawing = true;
         return;
     }
     drawing = true;
@@ -56,12 +53,6 @@ function startDrawing(e) {
 }
 
 function draw(e) {
-    if (tool === 'select' && isDraggingElement && selectedElement) {
-        selectedElement.x = e.offsetX - offsetX;
-        selectedElement.y = e.offsetY - offsetY;
-        redrawCanvas();
-        return;
-    }
     if (!drawing) return;
     const x = e.offsetX;
     const y = e.offsetY;
@@ -78,6 +69,12 @@ function draw(e) {
         ctx.setLineDash([5, 5]);
     } else {
         ctx.setLineDash([]);
+    }
+
+    if (tool === 'select') {
+        ctx.setLineDash([5, 5]);
+        ctx.strokeRect(startX, startY, x - startX, y - startY);
+        return;
     }
 
     switch (tool) {
@@ -124,19 +121,26 @@ function erase(x, y) {
     ctx.restore();
 }
 
-function stopDrawing() {
-    if (tool === 'select') {
-        isDraggingElement = false;
-        return;
-    }
+function stopDrawing(e) {
     if (!drawing) return;
     drawing = false;
-    const x = startX;
-    const y = startY;
-    const width = ctx.lineWidth;
-    const color = currentColor;
-    const element = { tool, x, y, width, color, endX: startX, endY: startY };
-    elements.push(element);
+    if (tool === 'select') {
+        const x = e.offsetX;
+        const y = e.offsetY;
+        selection = {
+            x: Math.min(startX, x),
+            y: Math.min(startY, y),
+            width: Math.abs(x - startX),
+            height: Math.abs(y - startY)
+        };
+        if (selection.width && selection.height) {
+            const imageData = ctx.getImageData(selection.x, selection.y, selection.width, selection.height);
+            ctx.clearRect(selection.x, selection.y, selection.width, selection.height);
+            ctx.putImageData(history[history.length - 1], 0, 0);
+            selection.data = imageData;
+        }
+        return;
+    }
     if (history.length >= maxHistory) {
         history.shift();
     }
@@ -293,34 +297,51 @@ function clearCanvas() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     history = [];
     redoStack = [];
-    elements = [];
     history.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
 }
 
-function getElementAtPosition(x, y) {
-    for (let i = elements.length - 1; i >= 0; i--) {
-        const el = elements[i];
-        if (x >= el.x && x <= el.x + el.width && y >= el.y && y <= el.y + el.height) {
-            return el;
-        }
-    }
-    return null;
+function moveSelection(e) {
+    if (!isDraggingSelection || !selection) return;
+    const x = e.offsetX;
+    const y = e.offsetY;
+    const dx = x - startX;
+    const dy = y - startY;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.putImageData(history[history.length - 1], 0, 0);
+    ctx.putImageData(selection.data, selection.x + dx, selection.y + dy);
 }
 
-function redrawCanvas() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    if (history.length > 0) {
-        ctx.putImageData(history[history.length - 1], 0, 0);
+function startDraggingSelection(e) {
+    if (tool === 'select' && selection) {
+        const x = e.offsetX;
+        const y = e.offsetY;
+        if (x > selection.x && x < selection.x + selection.width && y > selection.y && y < selection.y + selection.height) {
+            isDraggingSelection = true;
+            startX = x;
+            startY = y;
+        }
     }
-    elements.forEach(el => {
-        ctx.strokeStyle = el.color;
-        ctx.lineWidth = el.width;
-        ctx.strokeRect(el.x, el.y, el.width, el.height);
-    });
-    if (selectedElement) {
-        ctx.strokeStyle = 'red';
-        ctx.lineWidth = 2;
-        ctx.strokeRect(selectedElement.x, selectedElement.y, selectedElement.width, selectedElement.height);
+}
+
+function stopDraggingSelection(e) {
+    if (!isDraggingSelection) return;
+    isDraggingSelection = false;
+    const x = e.offsetX;
+    const y = e.offsetY;
+    const dx = x - startX;
+    const dy = y - startY;
+    selection.x += dx;
+    selection.y += dy;
+}
+
+function finalizeSelection() {
+    if (selection) {
+        ctx.putImageData(selection.data, selection.x, selection.y);
+        selection = null;
+        if (history.length >= maxHistory) {
+            history.shift();
+        }
+        history.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
     }
 }
 
@@ -405,6 +426,17 @@ canvas.addEventListener('mousedown', startDrawing);
 canvas.addEventListener('mousemove', throttle(draw, 10));
 canvas.addEventListener('mouseup', stopDrawing);
 canvas.addEventListener('mouseout', stopDrawing);
+
+canvas.addEventListener('mousedown', startDraggingSelection);
+canvas.addEventListener('mousemove', throttle(moveSelection, 10));
+canvas.addEventListener('mouseup', stopDraggingSelection);
+
+canvas.addEventListener('dblclick', finalizeSelection);
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+        finalizeSelection();
+    }
+});
 
 textInput.addEventListener('mousedown', startDraggingText);
 document.addEventListener('mousemove', dragText);
