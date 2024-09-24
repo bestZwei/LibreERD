@@ -240,18 +240,17 @@ document.getElementById('export').onclick = () => {
     link.click();
 };
 
-document.getElementById('resize-canvas').onclick = () => {
-    const newWidth = parseInt(document.getElementById('canvas-width').value);
-    const newHeight = parseInt(document.getElementById('canvas-height').value);
-    if (newWidth && newHeight) {
-        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        canvas.width = newWidth;
-        canvas.height = newHeight;
-        ctx.putImageData(imageData, 0, 0);
-        ctx.fillStyle = 'white';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.putImageData(imageData, 0, 0);
-        history.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
+document.getElementById('increase-size').onclick = () => {
+    canvas.width += 100;
+    canvas.height += 100;
+    ctx.putImageData(history[history.length - 1], 0, 0);
+};
+
+document.getElementById('decrease-size').onclick = () => {
+    if (canvas.width > 200 && canvas.height > 200) {
+        canvas.width -= 100;
+        canvas.height -= 100;
+        ctx.putImageData(history[history.length - 1], 0, 0);
     }
 };
 

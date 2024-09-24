@@ -35,11 +35,12 @@
         <button id="undo" data-tooltip="Undo (Ctrl+Z)">Undo</button>
         <button id="redo" data-tooltip="Redo (Ctrl+Y)">Redo</button>
         <button id="export" data-tooltip="Export Image">Export</button>
-        <input type="number" id="canvas-width" placeholder="Width" min="100">
-        <input type="number" id="canvas-height" placeholder="Height" min="100">
-        <button id="resize-canvas" data-tooltip="Resize Canvas">Resize</button>
+        <button id="increase-size">Increase Canvas</button>
+        <button id="decrease-size">Decrease Canvas</button>
     </div>
-    <canvas id="canvas"></canvas>
+    <div id="canvas-container">
+        <canvas id="canvas"></canvas>
+    </div>
     <input type="text" id="text-input" style="display:none; position:absolute;">
     <script src="js/script.js"></script>
 </body>
