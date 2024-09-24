@@ -90,10 +90,3 @@ input[type="color"]::-webkit-color-swatch-wrapper {
 input[type="color"]::-webkit-color-swatch {
     border: none;
 }
-
-#selection-rect {
-    position: absolute;
-    border: 1px dashed #000;
-    display: none;
-    pointer-events: none;
-}
