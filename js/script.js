@@ -84,12 +84,12 @@ function erase(x, y) {
     ctx.arc(x, y, eraserSize / 2, 0, Math.PI * 2, false);
     ctx.fill();
     ctx.restore();
-    drawEraserOutline(x, y);
 }
 
 function drawEraserOutline(x, y) {
     ctx.save();
-    ctx.globalCompositeOperation = 'source-over';
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.putImageData(history[history.length - 1], 0, 0);
     ctx.beginPath();
     ctx.arc(x, y, eraserSize / 2, 0, Math.PI * 2, false);
     ctx.strokeStyle = 'gray';
@@ -254,7 +254,16 @@ textInput.onkeydown = (e) => {
 };
 
 canvas.addEventListener('mousedown', startDrawing);
-canvas.addEventListener('mousemove', throttle(draw, 10));
+canvas.addEventListener('mousemove', (e) => {
+    if (tool === 'eraser') {
+        const x = e.offsetX;
+        const y = e.offsetY;
+        drawEraserOutline(x, y);
+        if (drawing) erase(x, y);
+    } else {
+        throttle(draw, 10)(e);
+    }
+});
 canvas.addEventListener('mouseup', stopDrawing);
 canvas.addEventListener('mouseout', stopDrawing);
 
