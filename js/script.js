@@ -116,7 +116,6 @@ function stopDrawing(e) {
             imageData: ctx.getImageData(Math.min(startX, x), Math.min(startY, y), Math.abs(x - startX), Math.abs(y - startY))
         };
         ctx.clearRect(selection.x, selection.y, selection.width, selection.height);
-        ctx.putImageData(history[history.length - 1], 0, 0);
         return;
     }
     if (history.length >= maxHistory) {
@@ -315,7 +314,7 @@ canvas.addEventListener('mouseout', (e) => {
 
 canvas.addEventListener('dblclick', () => {
     if (selection) {
-        finalizeSelection();
+        placeSelection();
     }
 });
 
@@ -337,7 +336,7 @@ document.addEventListener('keydown', (e) => {
     } else if (e.key === 's') {
         tool = 'select';
     } else if (e.key === 'Enter' && selection) {
-        finalizeSelection();
+        placeSelection();
     } else if (e.key === 'Backspace' && selection) {
         deleteSelection();
     }
@@ -355,15 +354,21 @@ function moveSelection(x, y) {
     selection.y = y;
 }
 
-function finalizeSelection() {
+function placeSelection() {
     ctx.putImageData(selection.imageData, selection.x, selection.y);
     selection = null;
+    if (history.length >= maxHistory) {
+        history.shift();
+    }
     history.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
 }
 
 function deleteSelection() {
     ctx.clearRect(selection.x, selection.y, selection.width, selection.height);
     selection = null;
+    if (history.length >= maxHistory) {
+        history.shift();
+    }
     history.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
 }
 
