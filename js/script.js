@@ -84,6 +84,17 @@ function erase(x, y) {
     ctx.arc(x, y, eraserSize / 2, 0, Math.PI * 2, false);
     ctx.fill();
     ctx.restore();
+    drawEraserOutline(x, y);
+}
+
+function drawEraserOutline(x, y) {
+    ctx.save();
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.beginPath();
+    ctx.arc(x, y, eraserSize / 2, 0, Math.PI * 2, false);
+    ctx.strokeStyle = 'gray';
+    ctx.stroke();
+    ctx.restore();
 }
 
 function stopDrawing() {
@@ -91,6 +102,7 @@ function stopDrawing() {
     drawing = false;
     history.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
     redoStack = [];
+    if (history.length > 50) history.shift(); // 限制撤销步数
 }
 
 function drawRoundedRect(x, y, width, height, radius) {
@@ -251,3 +263,38 @@ document.addEventListener('mousemove', dragText);
 document.addEventListener('mouseup', stopDraggingText);
 
 history.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
+
+// 添加快捷键支持
+document.addEventListener('keydown', (e) => {
+    switch (e.key) {
+        case 'r':
+            tool = 'rectangle';
+            break;
+        case 'e':
+            tool = 'eraser';
+            canvas.style.cursor = 'crosshair';
+            break;
+        case 'f':
+            tool = 'freeform';
+            break;
+        case 't':
+            tool = 'text';
+            break;
+        case 'l':
+            tool = 'line';
+            break;
+        case 'a':
+            tool = 'arrow';
+            break;
+        case 'z':
+            if (e.ctrlKey) {
+                document.getElementById('undo').click();
+            }
+            break;
+        case 'y':
+            if (e.ctrlKey) {
+                document.getElementById('redo').click();
+            }
+            break;
+    }
+});
