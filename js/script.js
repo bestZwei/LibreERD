@@ -261,6 +261,13 @@ function stopResizing() {
     isResizing = false;
 }
 
+function clearCanvas() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    history = [];
+    redoStack = [];
+    history.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
+}
+
 document.getElementById('shape-select').onchange = (e) => tool = e.target.value;
 document.getElementById('freeform').onclick = () => tool = 'freeform';
 document.getElementById('text').onclick = () => tool = 'text';
@@ -278,6 +285,8 @@ document.getElementById('color-picker').onchange = (e) => {
     ctx.fillStyle = currentColor;
 };
 document.getElementById('dashed-line').onchange = (e) => isDashed = e.target.checked;
+document.getElementById('select').onclick = () => tool = 'select';
+document.getElementById('clear').onclick = clearCanvas;
 document.getElementById('undo').onclick = () => {
     if (history.length > 1) {
         redoStack.push(history.pop());
@@ -364,6 +373,8 @@ document.addEventListener('keydown', (e) => {
         tool = 'arrow';
     } else if (e.key === 'e') {
         tool = 'eraser';
+    } else if (e.key === 's') {
+        tool = 'select';
     }
 });
 
