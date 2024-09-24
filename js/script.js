@@ -320,8 +320,8 @@ textInput.oninput = adjustTextInputSize;
 
 textInput.onkeydown = (e) => {
     if (e.key === 'Enter') {
-        const x = parseInt(textInput.style.left) - canvas.offsetLeft;
-        const y = parseInt(textInput.style.top) - canvas.offsetTop;
+        const x = parseInt(textInput.style.left) - canvasContainer.offsetLeft;
+        const y = parseInt(textInput.style.top) - canvasContainer.offsetTop;
         ctx.font = `${fontSize}px Arial`;
         ctx.fillStyle = currentColor;
         ctx.fillText(textInput.value, x, y + fontSize);
