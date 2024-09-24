@@ -360,8 +360,6 @@ function fixSelection() {
     if (selection) {
         ctx.putImageData(selection.imageData, selection.x, selection.y);
         selection = null;
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.putImageData(history[history.length - 1], 0, 0);
         if (history.length >= maxHistory) {
             history.shift();
         }
