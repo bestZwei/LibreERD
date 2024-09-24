@@ -1,7 +1,7 @@
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
-canvas.width = window.innerWidth - 20;
-canvas.height = window.innerHeight - 100;
+canvas.width = 2000; // 设置一个更大的虚拟画布
+canvas.height = 2000;
 
 let drawing = false;
 let tool = 'rectangle';
@@ -226,8 +226,9 @@ document.getElementById('export').onclick = () => {
     const link = document.createElement('a');
     link.download = 'drawing.png';
     const exportCanvas = document.createElement('canvas');
-    exportCanvas.width = canvas.width;
-    exportCanvas.height = canvas.height;
+    const container = document.getElementById('canvas-container');
+    exportCanvas.width = container.clientWidth;
+    exportCanvas.height = container.clientHeight;
     const exportCtx = exportCanvas.getContext('2d');
 
     if (document.getElementById('background-color').checked) {
@@ -235,7 +236,18 @@ document.getElementById('export').onclick = () => {
         exportCtx.fillRect(0, 0, exportCanvas.width, exportCanvas.height);
     }
 
-    exportCtx.drawImage(canvas, 0, 0);
+    exportCtx.drawImage(
+        canvas,
+        container.scrollLeft,
+        container.scrollTop,
+        container.clientWidth,
+        container.clientHeight,
+        0,
+        0,
+        container.clientWidth,
+        container.clientHeight
+    );
+
     link.href = exportCanvas.toDataURL();
     link.click();
 };
