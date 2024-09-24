@@ -1,8 +1,7 @@
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
-const canvasContainer = document.getElementById('canvas-container');
-canvas.width = canvasContainer.clientWidth;
-canvas.height = canvasContainer.clientHeight;
+canvas.width = window.innerWidth - 20;
+canvas.height = window.innerHeight - 100;
 
 let drawing = false;
 let tool = 'rectangle';
@@ -17,9 +16,6 @@ let isDraggingText = false;
 let offsetX, offsetY;
 const maxHistory = 50;
 let isDashed = false;
-let scale = 1;
-let originX = 0;
-let originY = 0;
 
 function startDrawing(e) {
     if (tool === 'text') {
@@ -35,16 +31,16 @@ function startDrawing(e) {
         return;
     }
     drawing = true;
-    startX = (e.offsetX - originX) / scale;
-    startY = (e.offsetY - originY) / scale;
+    startX = e.offsetX;
+    startY = e.offsetY;
     ctx.beginPath();
     ctx.moveTo(startX, startY);
 }
 
 function draw(e) {
     if (!drawing) return;
-    const x = (e.offsetX - originX) / scale;
-    const y = (e.offsetY - originY) / scale;
+    const x = e.offsetX;
+    const y = e.offsetY;
 
     if (tool === 'eraser') {
         erase(x, y);
@@ -197,17 +193,6 @@ function throttle(func, limit) {
     };
 }
 
-function zoom(e) {
-    if (e.ctrlKey) {
-        e.preventDefault();
-        const delta = e.deltaY > 0 ? -0.1 : 0.1;
-        scale += delta;
-        scale = Math.min(Math.max(0.1, scale), 10);
-        canvas.style.transform = `scale(${scale})`;
-        canvas.style.transformOrigin = '0 0';
-    }
-}
-
 document.getElementById('shape-select').onchange = (e) => tool = e.target.value;
 document.getElementById('freeform').onclick = () => tool = 'freeform';
 document.getElementById('text').onclick = () => tool = 'text';
@@ -241,8 +226,8 @@ document.getElementById('export').onclick = () => {
     const link = document.createElement('a');
     link.download = 'drawing.png';
     const exportCanvas = document.createElement('canvas');
-    exportCanvas.width = canvasContainer.clientWidth;
-    exportCanvas.height = canvasContainer.clientHeight;
+    exportCanvas.width = canvas.width;
+    exportCanvas.height = canvas.height;
     const exportCtx = exportCanvas.getContext('2d');
 
     if (document.getElementById('background-color').checked) {
@@ -250,10 +235,30 @@ document.getElementById('export').onclick = () => {
         exportCtx.fillRect(0, 0, exportCanvas.width, exportCanvas.height);
     }
 
-    exportCtx.drawImage(canvas, -originX, -originY, canvas.width, canvas.height, 0, 0, canvas.width * scale, canvas.height * scale);
+    exportCtx.drawImage(canvas, 0, 0);
     link.href = exportCanvas.toDataURL();
     link.click();
 };
+
+document.getElementById('resize-canvas').onclick = () => {
+    const width = parseInt(document.getElementById('canvas-width').value);
+    const height = parseInt(document.getElementById('canvas-height').value);
+    if (width > 0 && height > 0) {
+        resizeCanvas(width, height);
+    }
+};
+
+document.getElementById('fit-window').onclick = () => {
+    resizeCanvas(window.innerWidth - 20, window.innerHeight - 100);
+};
+
+function resizeCanvas(width, height) {
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    canvas.width = width;
+    canvas.height = height;
+    ctx.putImageData(imageData, 0, 0);
+    history.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
+}
 
 textInput.oninput = adjustTextInputSize;
 
@@ -287,7 +292,6 @@ canvas.addEventListener('mousedown', startDrawing);
 canvas.addEventListener('mousemove', throttle(draw, 10));
 canvas.addEventListener('mouseup', stopDrawing);
 canvas.addEventListener('mouseout', stopDrawing);
-canvas.addEventListener('wheel', zoom);
 
 textInput.addEventListener('mousedown', startDraggingText);
 document.addEventListener('mousemove', dragText);

@@ -18,7 +18,7 @@ body {
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-button, select, input[type="color"], label {
+button, select, input[type="color"], label, input[type="number"] {
     margin: 5px;
     padding: 10px;
     font-size: 16px;
@@ -29,30 +29,20 @@ button, select, input[type="color"], label {
     transition: background 0.3s, transform 0.1s;
 }
 
-button:active, select:active, input[type="color"]:active {
+button:active, select:active, input[type="color"]:active, input[type="number"]:active {
     transform: scale(0.95);
 }
 
-button:hover, select:hover, input[type="color"]:hover {
+button:hover, select:hover, input[type="color"]:hover, input[type="number"]:hover {
     background: #ccc;
 }
 
-#canvas-container {
-    overflow: hidden;
-    position: relative;
-    width: 100%;
-    height: 100%;
+#canvas {
     border: 1px solid #ccc;
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    background-color: white; /* 设置画板底色为白色 */
-}
-
-#canvas {
-    position: absolute;
-    top: 0;
-    left: 0;
     cursor: crosshair;
+    background-color: white;
 }
 
 #text-input {
