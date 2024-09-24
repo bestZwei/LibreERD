@@ -257,4 +257,22 @@ textInput.addEventListener('mousedown', startDraggingText);
 document.addEventListener('mousemove', dragText);
 document.addEventListener('mouseup', stopDraggingText);
 
+document.addEventListener('keydown', (e) => {
+    if (e.ctrlKey && e.key === 'z') {
+        document.getElementById('undo').click();
+    } else if (e.ctrlKey && e.key === 'y') {
+        document.getElementById('redo').click();
+    } else if (e.key === 'f') {
+        tool = 'freeform';
+    } else if (e.key === 't') {
+        tool = 'text';
+    } else if (e.key === 'l') {
+        tool = 'line';
+    } else if (e.key === 'a') {
+        tool = 'arrow';
+    } else if (e.key === 'e') {
+        tool = 'eraser';
+    }
+});
+
 history.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
