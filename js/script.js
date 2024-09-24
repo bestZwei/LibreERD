@@ -143,8 +143,6 @@ function stopDrawing(e) {
         selectionOffsetX = e.offsetX - selection.x;
         selectionOffsetY = e.offsetY - selection.y;
         ctx.putImageData(history[history.length - 1], 0, 0);
-        ctx.clearRect(selection.x, selection.y, selection.width, selection.height);
-        history.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
         return;
     }
 
