@@ -20,6 +20,8 @@ const maxHistory = 50;
 let isDashed = false;
 let isResizing = false;
 let lastX, lastY;
+const minWidth = 100;
+const minHeight = 100;
 
 function startDrawing(e) {
     if (tool === 'text') {
@@ -241,13 +243,18 @@ function resizeCanvas(e) {
     if (!isResizing) return;
     const dx = e.clientX - lastX;
     const dy = e.clientY - lastY;
-    canvas.width += dx;
-    canvas.height += dy;
-    canvasContainer.style.width = `${canvas.width}px`;
-    canvasContainer.style.height = `${canvas.height}px`;
-    lastX = e.clientX;
-    lastY = e.clientY;
-    ctx.putImageData(history[history.length - 1], 0, 0);
+    const newWidth = canvas.width + dx;
+    const newHeight = canvas.height + dy;
+
+    if (newWidth >= minWidth && newHeight >= minHeight) {
+        canvas.width = newWidth;
+        canvas.height = newHeight;
+        canvasContainer.style.width = `${canvas.width}px`;
+        canvasContainer.style.height = `${canvas.height}px`;
+        lastX = e.clientX;
+        lastY = e.clientY;
+        ctx.putImageData(history[history.length - 1], 0, 0);
+    }
 }
 
 function stopResizing() {

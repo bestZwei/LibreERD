@@ -60,6 +60,11 @@ button:hover, select:hover, input[type="color"]:hover {
     right: 0;
     cursor: se-resize;
     border-radius: 50%;
+    transition: background 0.3s;
+}
+
+#resize-handle:hover {
+    background-color: #aaa;
 }
 
 #text-input {
