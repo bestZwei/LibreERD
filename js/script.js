@@ -14,6 +14,7 @@ let currentColor = '#000000';
 const textInput = document.getElementById('text-input');
 let isDraggingText = false;
 let offsetX, offsetY;
+const maxHistory = 50;
 
 function startDrawing(e) {
     if (tool === 'text') {
@@ -86,23 +87,14 @@ function erase(x, y) {
     ctx.restore();
 }
 
-function drawEraserOutline(x, y) {
-    ctx.save();
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.putImageData(history[history.length - 1], 0, 0);
-    ctx.beginPath();
-    ctx.arc(x, y, eraserSize / 2, 0, Math.PI * 2, false);
-    ctx.strokeStyle = 'gray';
-    ctx.stroke();
-    ctx.restore();
-}
-
 function stopDrawing() {
     if (!drawing) return;
     drawing = false;
+    if (history.length >= maxHistory) {
+        history.shift();
+    }
     history.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
     redoStack = [];
-    if (history.length > 50) history.shift(); // 限制撤销步数
 }
 
 function drawRoundedRect(x, y, width, height, radius) {
@@ -248,22 +240,16 @@ textInput.onkeydown = (e) => {
             });
             textInput.style.display = 'none';
             textInput.value = '';
+            if (history.length >= maxHistory) {
+                history.shift();
+            }
             history.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
         }
     }
 };
 
 canvas.addEventListener('mousedown', startDrawing);
-canvas.addEventListener('mousemove', (e) => {
-    if (tool === 'eraser') {
-        const x = e.offsetX;
-        const y = e.offsetY;
-        drawEraserOutline(x, y);
-        if (drawing) erase(x, y);
-    } else {
-        throttle(draw, 10)(e);
-    }
-});
+canvas.addEventListener('mousemove', throttle(draw, 10));
 canvas.addEventListener('mouseup', stopDrawing);
 canvas.addEventListener('mouseout', stopDrawing);
 
@@ -272,38 +258,3 @@ document.addEventListener('mousemove', dragText);
 document.addEventListener('mouseup', stopDraggingText);
 
 history.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
-
-// 添加快捷键支持
-document.addEventListener('keydown', (e) => {
-    switch (e.key) {
-        case 'r':
-            tool = 'rectangle';
-            break;
-        case 'e':
-            tool = 'eraser';
-            canvas.style.cursor = 'crosshair';
-            break;
-        case 'f':
-            tool = 'freeform';
-            break;
-        case 't':
-            tool = 'text';
-            break;
-        case 'l':
-            tool = 'line';
-            break;
-        case 'a':
-            tool = 'arrow';
-            break;
-        case 'z':
-            if (e.ctrlKey) {
-                document.getElementById('undo').click();
-            }
-            break;
-        case 'y':
-            if (e.ctrlKey) {
-                document.getElementById('redo').click();
-            }
-            break;
-    }
-});
