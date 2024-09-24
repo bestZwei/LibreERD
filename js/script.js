@@ -17,6 +17,7 @@ let offsetX, offsetY;
 const maxHistory = 50;
 let selection = null;
 let isDraggingSelection = false;
+let selectionStartX, selectionStartY;
 
 function startDrawing(e) {
     if (tool === 'text') {
@@ -110,6 +111,8 @@ function stopDrawing() {
         const imageData = ctx.getImageData(selection.startX, selection.startY, selection.width, selection.height);
         ctx.clearRect(selection.startX, selection.startY, selection.width, selection.height);
         selection.imageData = imageData;
+        selectionStartX = selection.startX;
+        selectionStartY = selection.startY;
         isDraggingSelection = true;
         return;
     }
@@ -215,6 +218,8 @@ function dragSelection(e) {
     ctx.putImageData(history[history.length - 1], 0, 0);
     const x = e.offsetX - selection.width / 2;
     const y = e.offsetY - selection.height / 2;
+    selection.startX = x;
+    selection.startY = y;
     ctx.putImageData(selection.imageData, x, y);
     ctx.setLineDash([6]);
     ctx.strokeRect(x, y, selection.width, selection.height);
