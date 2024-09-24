@@ -22,6 +22,9 @@ let isResizing = false;
 let lastX, lastY;
 const minWidth = 100;
 const minHeight = 100;
+let selectedElement = null;
+let isDraggingElement = false;
+let elements = [];
 
 function startDrawing(e) {
     if (tool === 'text') {
@@ -36,6 +39,15 @@ function startDrawing(e) {
         adjustTextInputSize();
         return;
     }
+    if (tool === 'select') {
+        selectedElement = getElementAtPosition(e.offsetX, e.offsetY);
+        if (selectedElement) {
+            isDraggingElement = true;
+            offsetX = e.offsetX - selectedElement.x;
+            offsetY = e.offsetY - selectedElement.y;
+        }
+        return;
+    }
     drawing = true;
     startX = e.offsetX;
     startY = e.offsetY;
@@ -44,6 +56,12 @@ function startDrawing(e) {
 }
 
 function draw(e) {
+    if (tool === 'select' && isDraggingElement && selectedElement) {
+        selectedElement.x = e.offsetX - offsetX;
+        selectedElement.y = e.offsetY - offsetY;
+        redrawCanvas();
+        return;
+    }
     if (!drawing) return;
     const x = e.offsetX;
     const y = e.offsetY;
@@ -107,8 +125,18 @@ function erase(x, y) {
 }
 
 function stopDrawing() {
+    if (tool === 'select') {
+        isDraggingElement = false;
+        return;
+    }
     if (!drawing) return;
     drawing = false;
+    const x = startX;
+    const y = startY;
+    const width = ctx.lineWidth;
+    const color = currentColor;
+    const element = { tool, x, y, width, color, endX: startX, endY: startY };
+    elements.push(element);
     if (history.length >= maxHistory) {
         history.shift();
     }
@@ -265,7 +293,35 @@ function clearCanvas() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     history = [];
     redoStack = [];
+    elements = [];
     history.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
+}
+
+function getElementAtPosition(x, y) {
+    for (let i = elements.length - 1; i >= 0; i--) {
+        const el = elements[i];
+        if (x >= el.x && x <= el.x + el.width && y >= el.y && y <= el.y + el.height) {
+            return el;
+        }
+    }
+    return null;
+}
+
+function redrawCanvas() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    if (history.length > 0) {
+        ctx.putImageData(history[history.length - 1], 0, 0);
+    }
+    elements.forEach(el => {
+        ctx.strokeStyle = el.color;
+        ctx.lineWidth = el.width;
+        ctx.strokeRect(el.x, el.y, el.width, el.height);
+    });
+    if (selectedElement) {
+        ctx.strokeStyle = 'red';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(selectedElement.x, selectedElement.y, selectedElement.width, selectedElement.height);
+    }
 }
 
 document.getElementById('shape-select').onchange = (e) => tool = e.target.value;
