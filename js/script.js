@@ -311,6 +311,13 @@ canvas.addEventListener('mouseout', (e) => {
     }
 });
 
+canvas.addEventListener('dblclick', fixSelection);
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && selection) {
+        fixSelection();
+    }
+});
+
 textInput.addEventListener('mousedown', startDraggingText);
 document.addEventListener('mousemove', dragText);
 document.addEventListener('mouseup', stopDraggingText);
@@ -345,6 +352,17 @@ function moveSelection(x, y) {
     ctx.putImageData(selection.imageData, x, y);
     selection.x = x;
     selection.y = y;
+}
+
+function fixSelection() {
+    if (selection) {
+        ctx.putImageData(selection.imageData, selection.x, selection.y);
+        selection = null;
+        if (history.length >= maxHistory) {
+            history.shift();
+        }
+        history.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
+    }
 }
 
 history.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
