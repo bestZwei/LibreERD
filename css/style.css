@@ -4,6 +4,7 @@ body {
     flex-direction: column;
     align-items: center;
     font-family: Arial, sans-serif;
+    background-color: #f5f5f5;
 }
 
 #toolbar {
@@ -11,14 +12,18 @@ body {
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
+    background-color: #fff;
+    padding: 10px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-button, select, input[type="color"] {
+button, select, input[type="color"], label {
     margin: 5px;
     padding: 10px;
     font-size: 16px;
     border: none;
-    background: #f0f0f0;
+    background: #e0e0e0;
     cursor: pointer;
     border-radius: 5px;
     transition: background 0.3s, transform 0.1s;
@@ -29,11 +34,13 @@ button:active, select:active, input[type="color"]:active {
 }
 
 button:hover, select:hover, input[type="color"]:hover {
-    background: #ddd;
+    background: #ccc;
 }
 
 #canvas {
-    border: 1px solid #000;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     cursor: crosshair;
 }
 
