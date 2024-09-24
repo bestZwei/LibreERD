@@ -20,7 +20,7 @@ const maxHistory = 50;
 let isDashed = false;
 let isResizing = false;
 let lastX, lastY;
-let resizeDirection;
+let resizeDirection = '';
 
 function startDrawing(e) {
     if (tool === 'text') {
@@ -216,35 +216,29 @@ function resizeCanvas(e) {
             canvas.height -= dy;
             canvasContainer.style.width = `${canvas.width}px`;
             canvasContainer.style.height = `${canvas.height}px`;
-            lastX = e.clientX;
-            lastY = e.clientY;
             break;
         case 'top-right':
             canvas.width += dx;
             canvas.height -= dy;
             canvasContainer.style.width = `${canvas.width}px`;
             canvasContainer.style.height = `${canvas.height}px`;
-            lastX = e.clientX;
-            lastY = e.clientY;
             break;
         case 'bottom-left':
             canvas.width -= dx;
             canvas.height += dy;
             canvasContainer.style.width = `${canvas.width}px`;
             canvasContainer.style.height = `${canvas.height}px`;
-            lastX = e.clientX;
-            lastY = e.clientY;
             break;
         case 'bottom-right':
             canvas.width += dx;
             canvas.height += dy;
             canvasContainer.style.width = `${canvas.width}px`;
             canvasContainer.style.height = `${canvas.height}px`;
-            lastX = e.clientX;
-            lastY = e.clientY;
             break;
     }
 
+    lastX = e.clientX;
+    lastY = e.clientY;
     ctx.putImageData(history[history.length - 1], 0, 0);
 }
 
