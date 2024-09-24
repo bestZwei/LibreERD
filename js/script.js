@@ -15,8 +15,14 @@ const textInput = document.getElementById('text-input');
 let isDraggingText = false;
 let offsetX, offsetY;
 const maxHistory = 50;
-let selection = null;
+
+// Selection variables
+let isSelecting = false;
+let selectionStartX, selectionStartY;
+let selectionWidth, selectionHeight;
 let isDraggingSelection = false;
+let selectionImageData = null;
+let selectionOffsetX, selectionOffsetY;
 
 function startDrawing(e) {
     if (tool === 'text') {
@@ -32,9 +38,9 @@ function startDrawing(e) {
         return;
     }
     if (tool === 'select') {
-        drawing = true;
-        startX = e.offsetX;
-        startY = e.offsetY;
+        isSelecting = true;
+        selectionStartX = e.offsetX;
+        selectionStartY = e.offsetY;
         return;
     }
     drawing = true;
@@ -45,7 +51,7 @@ function startDrawing(e) {
 }
 
 function draw(e) {
-    if (!drawing) return;
+    if (!drawing && !isSelecting) return;
     const x = e.offsetX;
     const y = e.offsetY;
 
@@ -57,9 +63,11 @@ function draw(e) {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.putImageData(history[history.length - 1], 0, 0);
 
-    if (tool === 'select') {
-        ctx.setLineDash([5, 5]);
-        ctx.strokeRect(startX, startY, x - startX, y - startY);
+    if (isSelecting) {
+        selectionWidth = x - selectionStartX;
+        selectionHeight = y - selectionStartY;
+        ctx.setLineDash([6]);
+        ctx.strokeRect(selectionStartX, selectionStartY, selectionWidth, selectionHeight);
         ctx.setLineDash([]);
         return;
     }
@@ -103,26 +111,61 @@ function erase(x, y) {
 }
 
 function stopDrawing(e) {
-    if (!drawing) return;
-    drawing = false;
-    if (tool === 'select') {
-        const x = e.offsetX;
-        const y = e.offsetY;
-        selection = {
-            x: Math.min(startX, x),
-            y: Math.min(startY, y),
-            width: Math.abs(x - startX),
-            height: Math.abs(y - startY),
-            imageData: ctx.getImageData(Math.min(startX, x), Math.min(startY, y), Math.abs(x - startX), Math.abs(y - startY))
-        };
-        ctx.clearRect(selection.x, selection.y, selection.width, selection.height);
+    if (isSelecting) {
+        isSelecting = false;
+        selectionImageData = ctx.getImageData(selectionStartX, selectionStartY, selectionWidth, selectionHeight);
+        ctx.clearRect(selectionStartX, selectionStartY, selectionWidth, selectionHeight);
+        ctx.putImageData(history[history.length - 1], 0, 0);
+        ctx.setLineDash([6]);
+        ctx.strokeRect(selectionStartX, selectionStartY, selectionWidth, selectionHeight);
+        ctx.setLineDash([]);
+        isDraggingSelection = true;
+        selectionOffsetX = e.offsetX - selectionStartX;
+        selectionOffsetY = e.offsetY - selectionStartY;
         return;
     }
+    if (!drawing) return;
+    drawing = false;
     if (history.length >= maxHistory) {
         history.shift();
     }
     history.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
     redoStack = [];
+}
+
+function dragSelection(e) {
+    if (!isDraggingSelection) return;
+    const x = e.offsetX - selectionOffsetX;
+    const y = e.offsetY - selectionOffsetY;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.putImageData(history[history.length - 1], 0, 0);
+    ctx.putImageData(selectionImageData, x, y);
+    ctx.setLineDash([6]);
+    ctx.strokeRect(x, y, selectionWidth, selectionHeight);
+    ctx.setLineDash([]);
+}
+
+function confirmSelection(e) {
+    if (isDraggingSelection) {
+        isDraggingSelection = false;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.putImageData(history[history.length - 1], 0, 0);
+        ctx.putImageData(selectionImageData, e.offsetX - selectionOffsetX, e.offsetY - selectionOffsetY);
+        if (history.length >= maxHistory) {
+            history.shift();
+        }
+        history.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
+        selectionImageData = null;
+    }
+}
+
+function deleteSelection() {
+    if (isDraggingSelection) {
+        isDraggingSelection = false;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.putImageData(history[history.length - 1], 0, 0);
+        selectionImageData = null;
+    }
 }
 
 function drawRoundedRect(x, y, width, height, radius) {
@@ -248,7 +291,6 @@ document.getElementById('export').onclick = () => {
     link.href = canvas.toDataURL();
     link.click();
 };
-document.getElementById('select').onclick = () => tool = 'select';
 
 textInput.oninput = adjustTextInputSize;
 
@@ -278,45 +320,16 @@ textInput.onkeydown = (e) => {
     }
 };
 
-canvas.addEventListener('mousedown', (e) => {
-    if (tool === 'select' && selection && isInsideSelection(e.offsetX, e.offsetY)) {
-        isDraggingSelection = true;
-        offsetX = e.offsetX - selection.x;
-        offsetY = e.offsetY - selection.y;
-    } else {
-        startDrawing(e);
-    }
-});
+canvas.addEventListener('mousedown', startDrawing);
+canvas.addEventListener('mousemove', throttle(draw, 10));
+canvas.addEventListener('mouseup', stopDrawing);
+canvas.addEventListener('mousemove', dragSelection);
+canvas.addEventListener('dblclick', confirmSelection);
+canvas.addEventListener('mouseout', stopDrawing);
 
-canvas.addEventListener('mousemove', throttle((e) => {
-    if (isDraggingSelection) {
-        moveSelection(e.offsetX - offsetX, e.offsetY - offsetY);
-    } else {
-        draw(e);
-    }
-}, 10));
-
-canvas.addEventListener('mouseup', (e) => {
-    if (isDraggingSelection) {
-        isDraggingSelection = false;
-    } else {
-        stopDrawing(e);
-    }
-});
-
-canvas.addEventListener('mouseout', (e) => {
-    if (isDraggingSelection) {
-        isDraggingSelection = false;
-    } else {
-        stopDrawing(e);
-    }
-});
-
-canvas.addEventListener('dblclick', () => {
-    if (selection) {
-        placeSelection();
-    }
-});
+textInput.addEventListener('mousedown', startDraggingText);
+document.addEventListener('mousemove', dragText);
+document.addEventListener('mouseup', stopDraggingText);
 
 document.addEventListener('keydown', (e) => {
     if (e.ctrlKey && e.key === 'z') {
@@ -333,47 +346,9 @@ document.addEventListener('keydown', (e) => {
         tool = 'arrow';
     } else if (e.key === 'e') {
         tool = 'eraser';
-    } else if (e.key === 's') {
-        tool = 'select';
-    } else if (e.key === 'Enter' && selection) {
-        placeSelection();
-    } else if (e.key === 'Backspace' && selection) {
+    } else if (e.key === 'Delete' || e.key === 'Backspace') {
         deleteSelection();
     }
 });
-
-function isInsideSelection(x, y) {
-    return selection && x >= selection.x && x <= selection.x + selection.width && y >= selection.y && y <= selection.y + selection.height;
-}
-
-function moveSelection(x, y) {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.putImageData(history[history.length - 1], 0, 0);
-    ctx.putImageData(selection.imageData, x, y);
-    selection.x = x;
-    selection.y = y;
-}
-
-function placeSelection() {
-    ctx.putImageData(selection.imageData, selection.x, selection.y);
-    selection = null;
-    if (history.length >= maxHistory) {
-        history.shift();
-    }
-    history.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
-}
-
-function deleteSelection() {
-    ctx.clearRect(selection.x, selection.y, selection.width, selection.height);
-    selection = null;
-    if (history.length >= maxHistory) {
-        history.shift();
-    }
-    history.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
-}
-
-textInput.addEventListener('mousedown', startDraggingText);
-document.addEventListener('mousemove', dragText);
-document.addEventListener('mouseup', stopDraggingText);
 
 history.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
