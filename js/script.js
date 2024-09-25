@@ -268,6 +268,24 @@ function clearCanvas() {
     history.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
 }
 
+function saveCanvas() {
+    const dataURL = canvas.toDataURL();
+    localStorage.setItem('canvasData', dataURL);
+}
+
+function loadCanvas() {
+    const dataURL = localStorage.getItem('canvasData');
+    if (dataURL) {
+        const img = new Image();
+        img.onload = () => {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(img, 0, 0);
+            history.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
+        };
+        img.src = dataURL;
+    }
+}
+
 document.getElementById('shape-select').onchange = (e) => tool = e.target.value;
 document.getElementById('freeform').onclick = () => tool = 'freeform';
 document.getElementById('text').onclick = () => tool = 'text';
@@ -315,6 +333,9 @@ document.getElementById('export').onclick = () => {
     link.href = exportCanvas.toDataURL();
     link.click();
 };
+
+document.getElementById('save').onclick = saveCanvas;
+document.getElementById('load').onclick = loadCanvas;
 
 textInput.oninput = adjustTextInputSize;
 
