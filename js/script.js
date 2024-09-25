@@ -114,6 +114,7 @@ function stopDrawing() {
     }
     history.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
     redoStack = [];
+    saveCanvasState();
 }
 
 function drawRoundedRect(x, y, width, height, radius) {
@@ -266,23 +267,23 @@ function clearCanvas() {
     history = [];
     redoStack = [];
     history.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
+    saveCanvasState();
 }
 
-function saveCanvas() {
-    const dataURL = canvas.toDataURL();
-    localStorage.setItem('canvasData', dataURL);
+function saveCanvasState() {
+    const canvasData = canvas.toDataURL();
+    localStorage.setItem('canvasData', canvasData);
 }
 
-function loadCanvas() {
-    const dataURL = localStorage.getItem('canvasData');
-    if (dataURL) {
+function loadCanvasState() {
+    const canvasData = localStorage.getItem('canvasData');
+    if (canvasData) {
         const img = new Image();
         img.onload = () => {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
             ctx.drawImage(img, 0, 0);
             history.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
         };
-        img.src = dataURL;
+        img.src = canvasData;
     }
 }
 
@@ -308,12 +309,14 @@ document.getElementById('undo').onclick = () => {
     if (history.length > 1) {
         redoStack.push(history.pop());
         ctx.putImageData(history[history.length - 1], 0, 0);
+        saveCanvasState();
     }
 };
 document.getElementById('redo').onclick = () => {
     if (redoStack.length > 0) {
         history.push(redoStack.pop());
         ctx.putImageData(history[history.length - 1], 0, 0);
+        saveCanvasState();
     }
 };
 document.getElementById('export').onclick = () => {
@@ -334,9 +337,6 @@ document.getElementById('export').onclick = () => {
     link.click();
 };
 
-document.getElementById('save').onclick = saveCanvas;
-document.getElementById('load').onclick = loadCanvas;
-
 textInput.oninput = adjustTextInputSize;
 
 textInput.onkeydown = (e) => {
@@ -353,6 +353,7 @@ textInput.onkeydown = (e) => {
             history.shift();
         }
         history.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
+        saveCanvasState();
     }
 };
 
@@ -387,4 +388,5 @@ document.addEventListener('keydown', (e) => {
     }
 });
 
+loadCanvasState();
 history.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
